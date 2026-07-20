@@ -1,0 +1,33 @@
+{
+  "manifest_version": 3,
+  "name": "Privacy Insight Extension(P.I.E)",
+  "version": "2.0.1",
+  "description": "Provides insights into website cookie usage to improve user awareness of online tracking and privacy.",
+  "permissions": [
+    "cookies",
+    "tabs",
+    "webRequest",
+    "storage",
+    "notifications"
+  ],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "pie16.png",
+      "48": "pie32.png",
+      "128": "pie128.png"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content_script.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
+

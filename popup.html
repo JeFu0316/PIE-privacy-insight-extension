@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>P.I.E (Privacy Insight Extension)</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <div class="head">
+      <div class="logo" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg>
+      </div>
+      <div>
+        <div class="brand-name">P.I.E</div>
+        <div class="brand-sub">Privacy Insight Extension</div>
+      </div>
+      <div class="spacer"></div>
+      <button class="theme-toggle" id="theme-btn" aria-label="Switch theme">
+        <svg id="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+        <span id="theme-label">System</span>
+      </button>
+      <button class="icon-btn" id="settings-btn" aria-label="Settings" title="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+    </div>
+
+    <div id="main-view">
+    <div class="site">
+      <span class="lock" id="site-lock" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+      <div style="flex:1; min-width:0;">
+        <div class="dom" id="site-domain">Scanning…</div>
+        <div class="ip" id="site-ip"></div>
+      </div>
+      <span class="pill" id="https-badge"></span>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab active" data-tab="overview" role="tab">Overview</button>
+      <button class="tab" data-tab="cookies" role="tab">Cookies</button>
+      <button class="tab" data-tab="security" role="tab">Security</button>
+      <button class="tab" data-tab="network" role="tab">Network</button>
+    </div>
+
+    <div class="body">
+      <section class="panel active" id="tab-overview" role="tabpanel">
+        <div class="rings" id="ov-rings"></div>
+        <div class="stats" id="ov-stats"></div>
+        <div class="hint" id="ov-hint"></div>
+      </section>
+
+      <section class="panel" id="tab-cookies" role="tabpanel">
+        <div id="cookies-list"></div>
+        <div class="rowline" id="cookies-actions"></div>
+      </section>
+
+      <section class="panel" id="tab-security" role="tabpanel">
+        <div id="security-content"></div>
+      </section>
+
+      <section class="panel" id="tab-network" role="tabpanel">
+        <div id="network-content"></div>
+      </section>
+    </div>
+
+    <div class="foot">
+      <span id="foot-status">P.I.E 2.0 · on-device</span>
+      <span>Two-axis scoring</span>
+    </div>
+    </div>
+
+    <div class="settings-panel" id="settings-panel" hidden>
+      <div class="settings-head">
+        <button class="icon-btn" id="settings-back" aria-label="Back" title="Back">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <div class="settings-title">Settings</div>
+      </div>
+      <div class="settings-body">
+        <div class="set-section">
+          <div class="set-label">Appearance</div>
+          <div class="seg-control" id="set-theme" role="group" aria-label="Theme">
+            <button type="button" class="seg-btn" data-theme="system">System</button>
+            <button type="button" class="seg-btn" data-theme="light">Light</button>
+            <button type="button" class="seg-btn" data-theme="dark">Dark</button>
+          </div>
+          <label class="set-row" style="margin-top:8px;">
+            <span class="set-row-text">Smooth animations</span>
+            <input type="checkbox" class="toggle" id="set-animations" />
+          </label>
+        </div>
+        <div class="set-section">
+          <div class="set-label">Privacy &amp; alerts</div>
+          <label class="set-row">
+            <span class="set-row-text">Third-party cookie alerts</span>
+            <input type="checkbox" class="toggle" id="set-notifications" />
+          </label>
+          <label class="set-row set-row-col">
+            <span class="set-row-top">
+              <span class="set-row-text">Show site IP address</span>
+              <input type="checkbox" class="toggle" id="set-ip" />
+            </span>
+            <span class="set-hint">Looks up the hostname via Google DNS — sends the visited domain off-device.</span>
+          </label>
+          <label class="set-row set-row-col">
+            <span class="set-row-top">
+              <span class="set-row-text">Network activity monitoring</span>
+              <input type="checkbox" class="toggle" id="set-network" />
+            </span>
+            <span class="set-hint">Logs the requests each page makes (metadata only, on-device) for the Network tab.</span>
+          </label>
+        </div>
+        <p class="set-footnote">Settings sync across Chrome when signed in.</p>
+      </div>
+    </div>
+
+    <script src="cookie-database.js"></script>
+    <script src="settings.js"></script>
+    <script src="popup.js"></script>
+  </body>
+</html>

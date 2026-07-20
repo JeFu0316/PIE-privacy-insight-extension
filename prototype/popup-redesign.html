@@ -1,0 +1,383 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>P.I.E — redesign prototype</title>
+<style>
+  :root {
+    --brand: #6D5EF6;
+    --brand-2: #8B7CF9;
+    --accent: #3B82F6;
+    --page-1: #F3F2FF;
+    --page-2: #E9E9FF;
+    --card: #FFFFFF;
+    --card-2: #F7F7FB;
+    --line: #ECEBF3;
+    --text: #1E2233;
+    --text-2: #6B7280;
+    --text-3: #9AA0AE;
+    --none-bg: #E7F7EF; --none-fg: #157A4E;
+    --low-bg: #E8F0FE; --low-fg: #1D4ED8;
+    --med-bg: #FEF3E2; --med-fg: #B45309;
+    --high-bg: #FDECEC; --high-fg: #B91C1C;
+    --shadow: 0 10px 30px rgba(37, 30, 90, 0.12);
+    --shadow-sm: 0 2px 8px rgba(37, 30, 90, 0.08);
+  }
+  [data-theme="dark"] {
+    --page-1: #14131C; --page-2: #0E0D15;
+    --card: #1C1B27; --card-2: #232232;
+    --line: #2E2C3D;
+    --text: #ECEBF5; --text-2: #A6A3B8; --text-3: #7C7990;
+    --none-bg: #10352A; --none-fg: #57D9A6;
+    --low-bg: #16233F; --low-fg: #7FAEF5;
+    --med-bg: #3A2B12; --med-fg: #F0B45C;
+    --high-bg: #3A1B1E; --high-fg: #F58A8A;
+    --shadow: 0 10px 30px rgba(0,0,0,0.5);
+    --shadow-sm: 0 2px 8px rgba(0,0,0,0.4);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    font-family: 'Segoe UI', Inter, Roboto, system-ui, sans-serif;
+    color: var(--text);
+    background: linear-gradient(135deg, var(--page-1), var(--page-2));
+    min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 32px 16px 48px;
+  }
+  .caption { color: var(--text-2); font-size: 13px; margin: 18px 0 0; text-align: center; max-width: 420px; }
+  .caption b { color: var(--text); font-weight: 600; }
+
+  .popup {
+    width: 400px; background: var(--card); border-radius: 18px;
+    box-shadow: var(--shadow); overflow: hidden; border: 1px solid var(--line);
+  }
+
+  /* header */
+  .head { display: flex; align-items: center; gap: 10px; padding: 14px 16px; }
+  .logo { width: 30px; height: 30px; border-radius: 9px;
+    background: linear-gradient(135deg, var(--brand), var(--brand-2));
+    display: grid; place-items: center; color: #fff; box-shadow: var(--shadow-sm); }
+  .logo svg { width: 17px; height: 17px; }
+  .brand-name { font-weight: 700; font-size: 15px; letter-spacing: .2px; }
+  .brand-sub { font-size: 10.5px; color: var(--text-2); margin-top: -2px; }
+  .head .spacer { flex: 1; }
+  .icon-btn { width: 30px; height: 30px; border: none; background: transparent; color: var(--text-2);
+    border-radius: 8px; cursor: pointer; display: grid; place-items: center; }
+  .icon-btn:hover { background: var(--card-2); color: var(--text); }
+  .icon-btn svg { width: 16px; height: 16px; }
+
+  /* site bar */
+  .site { display: flex; align-items: center; gap: 10px; margin: 0 16px 12px;
+    padding: 11px 12px; background: var(--card-2); border-radius: 12px; }
+  .site .lock { color: var(--none-fg); display: grid; place-items: center; }
+  .site .lock svg { width: 16px; height: 16px; }
+  .site .dom { font-weight: 600; font-size: 13.5px; }
+  .site .ip { font-size: 11px; color: var(--text-3); margin-top: 1px; }
+  .pill { font-size: 10.5px; font-weight: 700; padding: 4px 9px; border-radius: 999px; white-space: nowrap; }
+  .pill.secure { background: var(--none-bg); color: var(--none-fg); }
+
+  /* tabs */
+  .tabs { display: flex; gap: 4px; padding: 0 12px; margin-bottom: 12px; }
+  .tab { flex: 1; border: none; background: transparent; color: var(--text-2);
+    font-size: 12.5px; font-weight: 600; padding: 8px 6px; border-radius: 10px; cursor: pointer;
+    font-family: inherit; }
+  .tab:hover { background: var(--card-2); color: var(--text); }
+  .tab.active { background: linear-gradient(135deg, var(--brand), var(--brand-2)); color: #fff; box-shadow: var(--shadow-sm); }
+
+  .body { padding: 4px 16px 16px; max-height: 470px; overflow-y: auto; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* two-axis rings */
+  .rings { display: flex; gap: 12px; margin-bottom: 14px; }
+  .ring-card { flex: 1; background: var(--card-2); border-radius: 14px; padding: 12px 8px 10px; text-align: center; }
+  .ring { position: relative; width: 96px; height: 96px; margin: 0 auto 6px; }
+  .ring svg { transform: rotate(-90deg); }
+  .ring .val { position: absolute; inset: 0; display: grid; place-content: center; }
+  .ring .val b { font-size: 17px; font-weight: 700; }
+  .ring .val span { font-size: 10px; color: var(--text-2); display: block; margin-top: 1px; }
+  .ring-card .title { font-size: 11.5px; font-weight: 600; color: var(--text-2); }
+
+  /* stat grid */
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .stat { background: var(--card-2); border-radius: 12px; padding: 12px; display: flex; align-items: center; gap: 10px; }
+  .stat .n { font-size: 20px; font-weight: 700; }
+  .stat .l { font-size: 11.5px; color: var(--text-2); }
+  .stat .ico { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; flex: none; }
+  .stat .ico svg { width: 16px; height: 16px; }
+  .ico.p { background: #EFEBFE; color: #6D5EF6; }
+  .ico.b { background: #E8F0FE; color: #2563EB; }
+  .ico.a { background: #FEF3E2; color: #B45309; }
+  .ico.g { background: #E7F7EF; color: #157A4E; }
+  [data-theme="dark"] .ico.p { background:#241f3d;} [data-theme="dark"] .ico.b{background:#16233f;}
+  [data-theme="dark"] .ico.a { background:#3a2b12;} [data-theme="dark"] .ico.g{background:#10352a;}
+
+  .hint { font-size: 11.5px; color: var(--text-2); background: var(--card-2); border-radius: 10px;
+    padding: 9px 11px; margin-top: 12px; line-height: 1.5; }
+
+  /* cookie table */
+  .ctable { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  .crow { border-bottom: 1px solid var(--line); }
+  .crow:last-child { border-bottom: none; }
+  .csum { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center;
+    padding: 10px 12px; cursor: pointer; }
+  .csum:hover { background: var(--card-2); }
+  .cname { font-size: 12.5px; font-weight: 600; min-width: 0; }
+  .cname .plat { font-weight: 400; color: var(--text-3); font-size: 11px; margin-left: 4px; }
+  .cname .type { display: inline-block; font-size: 9.5px; font-weight: 700; padding: 2px 6px; border-radius: 6px; margin-left: 6px; vertical-align: 1px; }
+  .type.first { background: var(--none-bg); color: var(--none-fg); }
+  .type.third { background: #F1EDFB; color: #6D5EF6; }
+  [data-theme="dark"] .type.third { background:#241f3d; }
+  .badge { font-size: 10px; font-weight: 700; padding: 3px 7px; border-radius: 7px; white-space: nowrap; }
+  .b-none { background: var(--none-bg); color: var(--none-fg); }
+  .b-low { background: var(--low-bg); color: var(--low-fg); }
+  .b-medium { background: var(--med-bg); color: var(--med-fg); }
+  .b-high { background: var(--high-bg); color: var(--high-fg); }
+  .cdet { display: none; padding: 0 12px 12px; font-size: 11.5px; color: var(--text-2); }
+  .crow.open .cdet { display: block; }
+  .cdet .kv { display: flex; justify-content: space-between; padding: 3px 0; border-bottom: 1px dashed var(--line); }
+  .cdet .kv:last-of-type { border-bottom: none; }
+  .cdet .acts { display: flex; gap: 8px; margin-top: 9px; }
+  .cdet .acts button { font-size: 11px; font-family: inherit; border: 1px solid var(--line); background: var(--card);
+    color: var(--accent); padding: 5px 9px; border-radius: 8px; cursor: pointer; }
+  .cdet .acts button.del { color: var(--high-fg); }
+  .cdet .acts button:hover { background: var(--card-2); }
+
+  .rowline { display: flex; align-items: center; justify-content: space-between; margin: 12px 2px 8px; }
+  .rowline .t { font-size: 12px; color: var(--text-2); }
+  .btn-danger { font-size: 11.5px; font-family: inherit; font-weight: 600; border: none; cursor: pointer;
+    background: var(--high-bg); color: var(--high-fg); padding: 7px 11px; border-radius: 9px; }
+
+  .notice { display: flex; gap: 9px; align-items: flex-start; font-size: 11.5px; line-height: 1.5;
+    background: #FFF7E8; color: #92610A; border: 1px solid #F6E2B8; border-radius: 11px; padding: 10px 12px; margin-bottom: 12px; }
+  [data-theme="dark"] .notice { background:#3a2b12; color:#f0c479; border-color:#5a4520; }
+  .notice svg { width: 15px; height: 15px; flex: none; margin-top: 1px; }
+
+  .net { width: 100%; border-collapse: collapse; font-size: 11.5px; }
+  .net th { text-align: left; color: var(--text-3); font-weight: 600; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+  .net td { padding: 7px 8px; border-bottom: 1px solid var(--line); }
+  .net .m { font-weight: 700; font-size: 10px; }
+  .m.get { color: #2563EB; } .m.post { color: #7C3AED; }
+  .net .url { color: var(--text-2); max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .st { font-weight: 700; }
+
+  .seccard { background: var(--card-2); border-radius: 12px; padding: 13px; margin-bottom: 12px; }
+  .seccard.good { background: var(--none-bg); }
+  .seccard .st-row { display: flex; align-items: center; gap: 10px; }
+  .seccard .st-row svg { width: 20px; height: 20px; color: var(--none-fg); }
+  .seccard .h { font-weight: 700; font-size: 13px; color: var(--none-fg); }
+  .seccard .s { font-size: 11.5px; color: var(--none-fg); opacity: .85; }
+  .warn-item { display: flex; gap: 8px; font-size: 11.5px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+  .warn-item:last-child { border-bottom: none; }
+  .warn-item .wt { color: var(--med-fg); font-weight: 600; }
+
+  .foot { display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 16px; border-top: 1px solid var(--line); font-size: 10.5px; color: var(--text-3); }
+  .theme-toggle { border: 1px solid var(--line); background: var(--card); color: var(--text-2);
+    font-size: 11px; font-family: inherit; padding: 5px 10px; border-radius: 999px; cursor: pointer; display: flex; gap: 6px; align-items: center; }
+  .theme-toggle svg { width: 13px; height: 13px; }
+  .sec-list { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 4px 13px; }
+</style>
+</head>
+<body>
+  <div class="popup" role="application" aria-label="P.I.E redesign prototype">
+    <!-- header -->
+    <div class="head">
+      <div class="logo" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg>
+      </div>
+      <div>
+        <div class="brand-name">P.I.E</div>
+        <div class="brand-sub">Privacy Insight Extension</div>
+      </div>
+      <div class="spacer"></div>
+      <button class="theme-toggle" id="themeBtn" aria-label="Toggle theme">
+        <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+        <span id="themeLabel">Light</span>
+      </button>
+      <button class="icon-btn" aria-label="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+    </div>
+
+    <!-- site -->
+    <div class="site">
+      <span class="lock" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+      <div style="flex:1; min-width:0;">
+        <div class="dom">mail.google.com</div>
+        <div class="ip">74.125.24.19 · 10 cookies</div>
+      </div>
+      <span class="pill secure">HTTPS Secure</span>
+    </div>
+
+    <!-- tabs -->
+    <div class="tabs" role="tablist">
+      <button class="tab active" data-tab="overview" role="tab">Overview</button>
+      <button class="tab" data-tab="cookies" role="tab">Cookies</button>
+      <button class="tab" data-tab="network" role="tab">Network</button>
+      <button class="tab" data-tab="security" role="tab">Security</button>
+    </div>
+
+    <div class="body">
+      <!-- OVERVIEW -->
+      <section class="panel active" id="overview">
+        <div class="rings">
+          <div class="ring-card">
+            <div class="ring">
+              <svg width="96" height="96" viewBox="0 0 96 96">
+                <circle cx="48" cy="48" r="40" fill="none" stroke="var(--line)" stroke-width="9"/>
+                <circle cx="48" cy="48" r="40" fill="none" stroke="#22B07D" stroke-width="9" stroke-linecap="round" stroke-dasharray="251" stroke-dashoffset="63"/>
+              </svg>
+              <div class="val"><b style="color:#157A4E">None</b><span>no PII</span></div>
+            </div>
+            <div class="title">Personal data exposure</div>
+          </div>
+          <div class="ring-card">
+            <div class="ring">
+              <svg width="96" height="96" viewBox="0 0 96 96">
+                <circle cx="48" cy="48" r="40" fill="none" stroke="var(--line)" stroke-width="9"/>
+                <circle cx="48" cy="48" r="40" fill="none" stroke="#E5484D" stroke-width="9" stroke-linecap="round" stroke-dasharray="251" stroke-dashoffset="10"/>
+              </svg>
+              <div class="val"><b style="color:#B91C1C">High</b><span>5 trackers</span></div>
+            </div>
+            <div class="title">Cross-site tracking</div>
+          </div>
+        </div>
+
+        <div class="stats">
+          <div class="stat"><span class="ico p" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="9" cy="10" r="1"/><circle cx="14" cy="14" r="1"/><circle cx="15" cy="9" r="1"/></svg></span><div><div class="n">10</div><div class="l">Cookies</div></div></div>
+          <div class="stat"><span class="ico b" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 12h16M4 12a8 8 0 0 1 16 0M4 12a8 8 0 0 0 16 0"/></svg></span><div><div class="n">3</div><div class="l">Third-party</div></div></div>
+          <div class="stat"><span class="ico a" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="2.5"/></svg></span><div><div class="n">5</div><div class="l">Known trackers</div></div></div>
+          <div class="stat"><span class="ico g" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span><div><div class="n">0</div><div class="l">PII found</div></div></div>
+        </div>
+
+        <div class="hint">Two independent readings — not one blended score. This site stores no personal data in its cookies, but loads several known cross-site trackers (Google, Facebook, Microsoft).</div>
+      </section>
+
+      <!-- COOKIES -->
+      <section class="panel" id="cookies">
+        <div class="ctable">
+          <div class="crow">
+            <div class="csum">
+              <div class="cname">_ga<span class="plat">Google Analytics</span><span class="type first">1st</span></div>
+              <span class="badge b-none">Sens: None</span><span class="badge b-medium">Track: Med</span>
+            </div>
+            <div class="cdet">
+              <div class="kv"><span>Domain</span><span>.google.com</span></div>
+              <div class="kv"><span>Expires</span><span>2 years</span></div>
+              <div class="kv"><span>Secure · HttpOnly · SameSite</span><span>yes · no · Lax</span></div>
+              <div class="acts"><button>Show value</button><button>Copy</button><button class="del">Delete</button></div>
+            </div>
+          </div>
+          <div class="crow">
+            <div class="csum">
+              <div class="cname">_fbp<span class="plat">Facebook</span><span class="type third">3rd</span></div>
+              <span class="badge b-none">Sens: None</span><span class="badge b-high">Track: High</span>
+            </div>
+            <div class="cdet">
+              <div class="kv"><span>Domain</span><span>.facebook.com</span></div>
+              <div class="kv"><span>Expires</span><span>3 months</span></div>
+              <div class="kv"><span>Secure · HttpOnly · SameSite</span><span>yes · no · None</span></div>
+              <div class="acts"><button>Show value</button><button>Copy</button><button class="del">Delete</button></div>
+            </div>
+          </div>
+          <div class="crow">
+            <div class="csum">
+              <div class="cname">session_id<span class="type first">1st</span></div>
+              <span class="badge b-high">Sens: High</span><span class="badge b-none">Track: None</span>
+            </div>
+            <div class="cdet">
+              <div class="kv"><span>Finding</span><span>Contains email address</span></div>
+              <div class="kv"><span>Domain</span><span>mail.google.com</span></div>
+              <div class="kv"><span>Secure · HttpOnly · SameSite</span><span>yes · yes · Strict</span></div>
+              <div class="acts"><button>Show value</button><button>Copy</button><button class="del">Delete</button></div>
+            </div>
+          </div>
+          <div class="crow">
+            <div class="csum">
+              <div class="cname">__Host-GMAIL_SCH<span class="type first">1st</span></div>
+              <span class="badge b-none">Sens: None</span><span class="badge b-none">Track: None</span>
+            </div>
+            <div class="cdet">
+              <div class="kv"><span>Value type</span><span>Opaque identifier (not PII)</span></div>
+              <div class="kv"><span>Domain</span><span>mail.google.com</span></div>
+              <div class="kv"><span>Secure · HttpOnly · SameSite</span><span>yes · no · Lax</span></div>
+              <div class="acts"><button>Show value</button><button>Copy</button><button class="del">Delete</button></div>
+            </div>
+          </div>
+        </div>
+        <div class="rowline">
+          <span class="t">1 cookie with PII · 5 known trackers</span>
+          <button class="btn-danger">Delete all flagged</button>
+        </div>
+      </section>
+
+      <!-- NETWORK -->
+      <section class="panel" id="network">
+        <div class="notice">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+          <span><b>Preview only.</b> A network-request log isn't in the current build — it needs the Manifest V3 / webRequest and privacy review first. Shown here as a design concept.</span>
+        </div>
+        <table class="net">
+          <thead><tr><th>Method</th><th>Request</th><th>Status</th><th>Type</th></tr></thead>
+          <tbody>
+            <tr><td><span class="m get">GET</span></td><td class="url">mail.google.com/mail/u/0</td><td class="st" style="color:#157A4E">200</td><td>doc</td></tr>
+            <tr><td><span class="m post">POST</span></td><td class="url">google-analytics.com/g/collect</td><td class="st" style="color:#157A4E">204</td><td>fetch</td></tr>
+            <tr><td><span class="m get">GET</span></td><td class="url">connect.facebook.net/en_US/fbevents.js</td><td class="st" style="color:#157A4E">200</td><td>script</td></tr>
+            <tr><td><span class="m get">GET</span></td><td class="url">clarity.ms/collect</td><td class="st" style="color:#B45309">302</td><td>fetch</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- SECURITY -->
+      <section class="panel" id="security">
+        <div class="seccard good">
+          <div class="st-row">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <div><div class="h">Secure (HTTPS)</div><div class="s">Encrypted · your data is protected in transit</div></div>
+          </div>
+        </div>
+        <div style="font-size:12px; font-weight:600; color:var(--text-2); margin:4px 2px 8px;">Cookie attribute warnings</div>
+        <div class="sec-list">
+          <div class="warn-item"><span class="wt">_ga</span><span style="color:var(--text-2)">Missing HttpOnly · SameSite not Strict</span></div>
+          <div class="warn-item"><span class="wt">_fbp</span><span style="color:var(--text-2)">SameSite=None · third-party</span></div>
+          <div class="warn-item"><span class="wt">__Host-GMAIL_SCH</span><span style="color:var(--text-2)">Missing HttpOnly</span></div>
+        </div>
+        <div class="hint" style="margin-top:12px;">🍪 Cookie consent banner detected on this site.</div>
+      </section>
+    </div>
+
+    <!-- footer -->
+    <div class="foot">
+      <span>P.I.E 3.0 · prototype</span>
+      <span>Two-axis scoring · on-device</span>
+    </div>
+  </div>
+
+  <p class="caption">Interactive prototype with <b>sample data</b> — switch tabs, expand a cookie row, toggle light/dark. Not wired to the live extension yet.</p>
+
+<script>
+  const tabs = document.querySelectorAll('.tab');
+  const panels = document.querySelectorAll('.panel');
+  tabs.forEach(t => t.addEventListener('click', () => {
+    tabs.forEach(x => x.classList.remove('active'));
+    panels.forEach(p => p.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById(t.dataset.tab).classList.add('active');
+  }));
+
+  document.querySelectorAll('.csum').forEach(s => s.addEventListener('click', () => {
+    s.parentElement.classList.toggle('open');
+  }));
+
+  const root = document.documentElement;
+  const btn = document.getElementById('themeBtn');
+  const label = document.getElementById('themeLabel');
+  btn.addEventListener('click', () => {
+    const dark = root.getAttribute('data-theme') === 'dark';
+    root.setAttribute('data-theme', dark ? 'light' : 'dark');
+    label.textContent = dark ? 'Light' : 'Dark';
+  });
+</script>
+</body>
+</html>
