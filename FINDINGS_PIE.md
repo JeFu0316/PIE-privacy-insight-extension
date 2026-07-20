@@ -125,17 +125,18 @@ ENHANCEMENT, not new work:
   features"), shown before deletion.
 Verdict: possible, needed, low lift.
 
-### #2 Block cookie banners — DESCOPE OR DEFER (honest recommendation)
-Detecting banners (current MutationObserver) is easy. Reliably BLOCKING/dismissing
-them is a whole product — the tools that do it well rely on large community rule
-sets, and MV3 constrains the network-level approach (see 1a). 
-Options, cheapest first:
-  (a) Cosmetic auto-hide of detected banners via CSS injection (brittle, may hide
-      wrong elements) — a "best effort" toggle, clearly labelled.
-  (b) Bundle/consume an existing open ruleset — licensing + maintenance burden.
-  (c) Defer to a later release.
-Recommendation: ship (a) as an optional, clearly-labelled "best effort" feature at
-most; treat full blocking as out of scope for this update.
+### #2 Block cookie banners — SHIPPED as best-effort auto-hide (option a)
+Detecting banners (MutationObserver) was already done. Full BLOCKING/dismissing is
+out of scope (community rule sets + MV3 network constraints, see 1a).
+
+**Shipped (option a):** an opt-in, off-by-default `bannerAutoHide` setting. When on,
+`content_script.js` injects a CSS rule hiding well-known CMP containers and hides
+the detected consent element inline, then restores page scroll if the banner locked
+it. Clearly labelled in the settings panel as "best-effort" — it is cosmetic only,
+does NOT click "reject" or change the site's consent state, and may hide the wrong
+element or miss a banner. Live-toggles via `chrome.storage.onChanged`; takes full
+effect on the next page load. No new permissions (uses existing `storage`).
+Deferred: option (b) community rulesets and any true network-level blocking.
 
 ---
 
@@ -163,11 +164,13 @@ surfaced in settings.
 2. **Scoring redesign**: two-axis model + bundled cookie DB (P2). **Done.**
 3. **Theming**: CSS-variable themes + selector, riding on the settings layer (P3).
 4. **Enhancements**: bulk delete + breakage warning (#5); optional best-effort
-   banner hide (#2, if approved). **Bulk delete done; banner hide pending.**
+   banner hide (#2, if approved). **Done — bulk delete + best-effort banner hide both shipped.**
 
 Each phase ends with a review pass and a check-in before the next begins.
 
-## Open questions for you
-- Banner blocking: descope to optional "best-effort hide", or defer entirely?
-- IP/DNS lookup: keep (disclosed), make optional, or remove?
-- Version bump target: is this a 3.0?
+## Open questions for you — RESOLVED
+- Banner blocking: ~~descope to optional "best-effort hide", or defer entirely?~~
+  → **Shipped best-effort hide (opt-in, off by default).**
+- IP/DNS lookup: ~~keep (disclosed), make optional, or remove?~~
+  → **Kept, off by default; disclose in privacy policy.**
+- Version bump target: ~~is this a 3.0?~~ → **2.0.2.**

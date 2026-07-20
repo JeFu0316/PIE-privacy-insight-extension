@@ -86,8 +86,10 @@ design choice (the Google DNS lookup) is worth removing under the new Aug 1 rule
 ## Decisions (this release)
 
 - **IP/DNS lookup:** KEEP, off by default, disclosed in the privacy policy (blocker #1).
-- **Cookie banners (#2):** ship an optional, clearly-labelled **best-effort CSS
-  auto-hide** (not full blocking). — _pending implementation._
+- **Cookie banners (#2):** **Done** — optional, clearly-labelled best-effort CSS
+  auto-hide (`bannerAutoHide`, off by default) in `content_script.js`; not full
+  blocking. Add a content-script justification to the dashboard: "Optionally hides
+  detected cookie-consent banners with CSS at the user's request."
 - **Version:** **2.0.2** (set in `manifest.json` and the popup footer).
 
 ---

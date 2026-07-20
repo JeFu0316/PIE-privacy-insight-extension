@@ -93,9 +93,12 @@
         </div>
         <div class="set-section">
           <div class="set-label">Privacy &amp; alerts</div>
-          <label class="set-row">
-            <span class="set-row-text">Third-party cookie alerts</span>
-            <input type="checkbox" class="toggle" id="set-notifications" />
+          <label class="set-row set-row-col">
+            <span class="set-row-top">
+              <span class="set-row-text">Desktop notifications</span>
+              <input type="checkbox" class="toggle" id="set-notifications" />
+            </span>
+            <span class="set-hint">Shows a desktop alert when a site sets third-party cookies — at most one per page. Turn this off to silence all notifications.</span>
           </label>
           <label class="set-row set-row-col">
             <span class="set-row-top">
@@ -110,6 +113,13 @@
               <input type="checkbox" class="toggle" id="set-network" />
             </span>
             <span class="set-hint">Logs the requests each page makes (metadata only, on-device) for the Network tab.</span>
+          </label>
+          <label class="set-row set-row-col">
+            <span class="set-row-top">
+              <span class="set-row-text">Auto-hide cookie banners</span>
+              <input type="checkbox" class="toggle" id="set-bannerhide" />
+            </span>
+            <span class="set-hint">Best-effort: hides detected consent banners with CSS. It doesn't reject cookies for you, and may occasionally hide the wrong element or miss a banner. Takes effect on the next page load.</span>
           </label>
         </div>
         <p class="set-footnote">Settings sync across Chrome when signed in.</p>

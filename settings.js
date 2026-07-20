@@ -16,7 +16,8 @@
     thirdPartyNotifications: true,
     ipLookupEnabled: false,
     networkMonitoring: true,
-    animations: true
+    animations: true,
+    bannerAutoHide: false
   });
 
   const VALID = {
@@ -41,6 +42,9 @@
     }
     if (typeof raw.animations === 'boolean') {
       out.animations = raw.animations;
+    }
+    if (typeof raw.bannerAutoHide === 'boolean') {
+      out.bannerAutoHide = raw.bannerAutoHide;
     }
 
     out.schemaVersion = SCHEMA_VERSION;

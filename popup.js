@@ -819,10 +819,12 @@ function bindSettingsControls(settings) {
   const ipEl = document.getElementById('set-ip');
   const netEl = document.getElementById('set-network');
   const animEl = document.getElementById('set-animations');
+  const bannerEl = document.getElementById('set-bannerhide');
   if (notifEl) notifEl.checked = settings.thirdPartyNotifications;
   if (ipEl) ipEl.checked = settings.ipLookupEnabled;
   if (netEl) netEl.checked = settings.networkMonitoring;
   if (animEl) animEl.checked = settings.animations;
+  if (bannerEl) bannerEl.checked = settings.bannerAutoHide;
   syncThemeControls(settings.theme);
 
   document.querySelectorAll('#set-theme [data-theme]').forEach((btn) => {
@@ -858,6 +860,12 @@ function bindSettingsControls(settings) {
     animEl.addEventListener('change', async () => {
       applyMotion(animEl.checked);
       popupSettings = await PIE_SETTINGS.save({ animations: animEl.checked });
+    });
+  }
+
+  if (bannerEl) {
+    bannerEl.addEventListener('change', async () => {
+      popupSettings = await PIE_SETTINGS.save({ bannerAutoHide: bannerEl.checked });
     });
   }
 }

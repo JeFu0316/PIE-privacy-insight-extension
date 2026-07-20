@@ -36,6 +36,9 @@ const { PIE_SETTINGS } = ctx;
   ok('extended theme catppuccin kept', PIE_SETTINGS.mergeWithDefaults({ theme: 'catppuccin' }).theme === 'catppuccin');
   ok('extended theme nord kept', PIE_SETTINGS.mergeWithDefaults({ theme: 'nord' }).theme === 'nord');
   ok('extended theme colorblind kept', PIE_SETTINGS.mergeWithDefaults({ theme: 'colorblind' }).theme === 'colorblind');
+  ok('bannerAutoHide default off', PIE_SETTINGS.mergeWithDefaults(null).bannerAutoHide === false);
+  ok('bannerAutoHide can enable', PIE_SETTINGS.mergeWithDefaults({ bannerAutoHide: true }).bannerAutoHide === true);
+  ok('bannerAutoHide ignores non-boolean', PIE_SETTINGS.mergeWithDefaults({ bannerAutoHide: 'yes' }).bannerAutoHide === false);
   ok('schemaVersion always current', PIE_SETTINGS.mergeWithDefaults({}).schemaVersion === PIE_SETTINGS.SCHEMA_VERSION);
 
   stored = {};

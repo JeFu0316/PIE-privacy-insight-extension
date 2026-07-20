@@ -10,12 +10,19 @@ refreshSettings();
 
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area === 'sync' && changes[PIE_SETTINGS.STORAGE_KEY]) {
+    const wasOn = bgSettings.thirdPartyNotifications;
     bgSettings = PIE_SETTINGS.mergeWithDefaults(changes[PIE_SETTINGS.STORAGE_KEY].newValue);
+    // If the user just turned notifications off, clear any that are still showing.
+    if (wasOn && !bgSettings.thirdPartyNotifications) clearAllNotifications();
   }
 });
 
-/* ---------- HTTPS badge ---------- */
+/* ---------- HTTPS badge + per-navigation notification reset ---------- */
 chrome.tabs.onUpdated.addListener((tabId, info, tab) => {
+  // A new URL means a new page: clear this tab's third-party alert state so the
+  // (single) summary notification starts fresh instead of carrying over.
+  if (info.url) clearTabNotification(tabId);
+
   if (info.status === 'complete' && tab.url) {
     const isSecure = tab.url.startsWith('https://');
     chrome.action.setBadgeText({ tabId, text: isSecure ? '✔' : '!' });
@@ -24,7 +31,36 @@ chrome.tabs.onUpdated.addListener((tabId, info, tab) => {
   }
 });
 
-/* ---------- Third-party cookie detection + notification ---------- */
+/* ---------- Third-party cookie detection + notification ----------
+ * Anti-spam design: we notify only for responses that actually set a cookie, and
+ * at most ONE desktop notification per tab per page load. As more distinct
+ * third-party cookie domains appear, that single notification is updated in place
+ * (never re-popped). State resets on navigation and clears when the tab closes. */
+
+// tabId -> { domains: Set<string>, notifId: string|null }
+const thirdPartyNotify = new Map();
+
+function clearTabNotification(tabId) {
+  const st = thirdPartyNotify.get(tabId);
+  if (st && st.notifId) { try { chrome.notifications.clear(st.notifId); } catch (_) {} }
+  thirdPartyNotify.delete(tabId);
+}
+
+function clearAllNotifications() {
+  for (const st of thirdPartyNotify.values()) {
+    if (st && st.notifId) { try { chrome.notifications.clear(st.notifId); } catch (_) {} }
+  }
+  thirdPartyNotify.clear();
+}
+
+function responseSetsCookie(headers) {
+  if (!Array.isArray(headers)) return false;
+  for (const h of headers) {
+    if (h && h.name && h.name.toLowerCase() === 'set-cookie') return true;
+  }
+  return false;
+}
+
 chrome.webRequest.onHeadersReceived.addListener(
   (details) => {
     try {
@@ -33,22 +69,44 @@ chrome.webRequest.onHeadersReceived.addListener(
 
       const pageDomain = new URL(initiator).hostname;
       const cookieDomain = new URL(details.url).hostname;
+      if (!pageDomain || !cookieDomain || cookieDomain.endsWith(pageDomain)) return;
 
-      if (pageDomain && cookieDomain && !cookieDomain.endsWith(pageDomain)) {
-        chrome.runtime.sendMessage({
-          type: 'THIRD_PARTY_COOKIE',
-          domain: cookieDomain,
-          from: pageDomain
-        }).catch(() => {});
+      // Only a response that actually SETS a cookie counts as a third-party cookie.
+      if (!responseSetsCookie(details.responseHeaders)) return;
 
-        if (bgSettings.thirdPartyNotifications) {
-          chrome.notifications.create({
-            type: 'basic',
-            iconUrl: 'pie128.png',
-            title: 'Privacy Alert – Third-Party Cookies',
-            message: `The site ${pageDomain} is loading cookies from ${cookieDomain}. These may track you across websites.`
-          });
-        }
+      chrome.runtime.sendMessage({
+        type: 'THIRD_PARTY_COOKIE',
+        domain: cookieDomain,
+        from: pageDomain
+      }).catch(() => {});
+
+      if (!bgSettings.thirdPartyNotifications) return;
+      const tabId = details.tabId;
+      if (tabId == null || tabId < 0) return;   // ignore non-tab (background) requests
+
+      let st = thirdPartyNotify.get(tabId);
+      if (!st) { st = { domains: new Set(), notifId: null }; thirdPartyNotify.set(tabId, st); }
+      if (st.domains.has(cookieDomain)) return;  // already counted — no new alert
+      st.domains.add(cookieDomain);
+
+      const count = st.domains.size;
+      const message = count === 1
+        ? `${cookieDomain} set a third-party cookie on ${pageDomain}. It may track you across sites.`
+        : `${count} third-party domains set cookies on ${pageDomain}. They may track you across sites.`;
+
+      if (!st.notifId) {
+        // First one this page: create a single notification (one desktop pop).
+        st.notifId = 'pie-3p-' + tabId + '-' + Date.now();
+        chrome.notifications.create(st.notifId, {
+          type: 'basic',
+          iconUrl: 'pie128.png',
+          title: 'Privacy Alert – Third-Party Cookies',
+          message: message,
+          priority: 0
+        });
+      } else {
+        // Subsequent domains: update the existing notification quietly, no new pop.
+        chrome.notifications.update(st.notifId, { message: message });
       }
     } catch (e) {}
   },
@@ -158,6 +216,7 @@ chrome.webRequest.onErrorOccurred.addListener(
 chrome.tabs.onRemoved.addListener((tabId) => {
   netLog.delete(tabId);
   tabHost.delete(tabId);
+  clearTabNotification(tabId);
 });
 
 /* ---------- Popup requests the current tab's network log ---------- */
