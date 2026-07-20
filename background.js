@@ -1,7 +1,5 @@
 importScripts('settings.js', 'tracker-domains.js');
 
-console.log('P.I.E background running');
-
 let bgSettings = PIE_SETTINGS.DEFAULTS;
 
 async function refreshSettings() {

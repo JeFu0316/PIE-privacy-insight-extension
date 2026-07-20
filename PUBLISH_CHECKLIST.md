@@ -71,16 +71,24 @@ design choice (the Google DNS lookup) is worth removing under the new Aug 1 rule
 
 ## Should fix (minor, not blocking)
 
-- Remove `console.log('P.I.E background running')` from `background.js`.
-- Delete the stray `err.tmp` from the folder.
+- ~~Remove `console.log('P.I.E background running')` from `background.js`.~~ **Done.**
+- ~~Delete the stray `err.tmp` from the folder.~~ **Done.**
 - **Package only runtime files.** Include: `manifest.json`, `background.js`,
   `content_script.js`, `popup.html/css/js`, `settings.js`, `cookie-database.js`,
   `tracker-domains.js`, `COOKIE_DB_LICENSE.txt`, `pie16/32/128.png`. **Exclude:**
   `.git/`, `.claude/`, `CLAUDE.md`, `FINDINGS_PIE.md`, `README.md`, `PUBLISH_CHECKLIST.md`,
   `prototype/`, `tests/`, `err.tmp`.
-- Icons: the manifest maps size `48` to `pie32.png` (a 32px image). Add a true 48px
-  icon, and consider a top-level `"icons"` field (for the management page) in addition
-  to `action.default_icon`.
+- ~~Icons: the manifest maps size `48` to `pie32.png` (a 32px image).~~ **Partly done:**
+  the 48px slot now downscales from `pie128.png` (sharper than upscaling the 32px), a
+  `32` mapping was added, and a top-level `"icons"` field now mirrors
+  `action.default_icon`. _Optional polish:_ ship a hand-tuned native `pie48.png`.
+
+## Decisions (this release)
+
+- **IP/DNS lookup:** KEEP, off by default, disclosed in the privacy policy (blocker #1).
+- **Cookie banners (#2):** ship an optional, clearly-labelled **best-effort CSS
+  auto-hide** (not full blocking). — _pending implementation._
+- **Version:** **2.0.2** (set in `manifest.json` and the popup footer).
 
 ---
 
