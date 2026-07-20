@@ -31,8 +31,11 @@ const { PIE_SETTINGS } = ctx;
   };
 
   ok('defaults applied when empty', PIE_SETTINGS.mergeWithDefaults(null).theme === 'system');
-  ok('invalid theme rejected', PIE_SETTINGS.mergeWithDefaults({ theme: 'catppuccin' }).theme === 'system');
+  ok('invalid theme rejected', PIE_SETTINGS.mergeWithDefaults({ theme: 'neon' }).theme === 'system');
   ok('valid theme kept', PIE_SETTINGS.mergeWithDefaults({ theme: 'dark' }).theme === 'dark');
+  ok('extended theme catppuccin kept', PIE_SETTINGS.mergeWithDefaults({ theme: 'catppuccin' }).theme === 'catppuccin');
+  ok('extended theme nord kept', PIE_SETTINGS.mergeWithDefaults({ theme: 'nord' }).theme === 'nord');
+  ok('extended theme colorblind kept', PIE_SETTINGS.mergeWithDefaults({ theme: 'colorblind' }).theme === 'colorblind');
   ok('schemaVersion always current', PIE_SETTINGS.mergeWithDefaults({}).schemaVersion === PIE_SETTINGS.SCHEMA_VERSION);
 
   stored = {};

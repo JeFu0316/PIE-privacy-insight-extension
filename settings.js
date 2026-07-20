@@ -20,7 +20,7 @@
   });
 
   const VALID = {
-    theme: new Set(['system', 'light', 'dark']),
+    theme: new Set(['system', 'light', 'dark', 'catppuccin', 'dracula', 'nord', 'colorblind']),
     defaultTab: new Set(['overview', 'cookies', 'security', 'network'])
   };
 

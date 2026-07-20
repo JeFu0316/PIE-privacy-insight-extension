@@ -90,12 +90,18 @@ else rides on this.
 popup (theme + tab + IP gate) and background (notification gate). Settings panel
 UI still Phase 3.
 
-### Themes (research-informed)
+### Themes (research-informed)  [DONE — Phase 3]
 Developer theme preferences cluster around a small, well-loved set. Recommended
 starter pack: Dark (current), Light, plus 2–3 crowd favourites in the style of
 Catppuccin (soft pastel, "pick of 2026"), Dracula (strong colour separation), and
 Nord/Tokyo Night (calm blue-toned). Include at least one accessibility/colour-blind
 friendly option (GitHub-style themes are noted for colour-blind support).
+
+**Shipped:** System, Light, Dark, Catppuccin (Mocha), Dracula, Nord, and a
+Colour-safe theme (Okabe-Ito palette — severity uses blue→orange→vermillion, no
+red/green reliance). Each is a `:root[data-theme="…"]` CSS-variable set in
+`popup.css`; selectable via a swatch-grid picker with colour previews in the
+settings panel; validated in `settings.js` and covered by `settings.test.js`.
 Implement via CSS custom properties (variables) so a theme is just a variable set —
 this also makes user-defined custom colours trivial later.
 

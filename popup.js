@@ -750,11 +750,20 @@ function setupTabs(initialTab) {
   if (start) activateTab(start);
 }
 
-const THEME_ORDER = ['system', 'light', 'dark'];
+const THEME_ORDER = ['system', 'light', 'dark', 'catppuccin', 'dracula', 'nord', 'colorblind'];
+const PALETTE_ICON = '<circle cx="13.5" cy="6.5" r="1.5"/><circle cx="17.5" cy="10.5" r="1.5"/><circle cx="8.5" cy="7.5" r="1.5"/><circle cx="6.5" cy="12.5" r="1.5"/><path d="M12 2a10 10 0 0 0 0 20c1.1 0 2-.9 2-2 0-.5-.2-1-.5-1.3-.3-.4-.5-.8-.5-1.2 0-1 .8-1.5 1.5-1.5H16a6 6 0 0 0 6-6c0-4.4-4.5-8-10-8z"/>';
 const THEME_ICON = {
   system: '<rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/>',
   light: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
-  dark: '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>'
+  dark: '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
+  catppuccin: PALETTE_ICON,
+  dracula: PALETTE_ICON,
+  nord: PALETTE_ICON,
+  colorblind: PALETTE_ICON
+};
+const THEME_LABEL = {
+  system: 'System', light: 'Light', dark: 'Dark',
+  catppuccin: 'Catppuccin', dracula: 'Dracula', nord: 'Nord', colorblind: 'Colour-safe'
 };
 
 function applyTheme(state) {
@@ -763,12 +772,12 @@ function applyTheme(state) {
   else root.setAttribute('data-theme', state);
   const icon = document.getElementById('theme-icon');
   const label = document.getElementById('theme-label');
-  if (icon) icon.innerHTML = THEME_ICON[state];
-  if (label) label.textContent = state.charAt(0).toUpperCase() + state.slice(1);
+  if (icon) icon.innerHTML = THEME_ICON[state] || PALETTE_ICON;
+  if (label) label.textContent = THEME_LABEL[state] || state;
 }
 
 function syncThemeControls(theme) {
-  document.querySelectorAll('#set-theme .seg-btn').forEach((btn) => {
+  document.querySelectorAll('#set-theme [data-theme]').forEach((btn) => {
     btn.classList.toggle('active', btn.dataset.theme === theme);
   });
 }
@@ -816,7 +825,7 @@ function bindSettingsControls(settings) {
   if (animEl) animEl.checked = settings.animations;
   syncThemeControls(settings.theme);
 
-  document.querySelectorAll('#set-theme .seg-btn').forEach((btn) => {
+  document.querySelectorAll('#set-theme [data-theme]').forEach((btn) => {
     btn.addEventListener('click', () => setTheme(btn.dataset.theme));
   });
 
