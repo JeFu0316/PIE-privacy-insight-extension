@@ -122,7 +122,26 @@
             <span class="set-hint">Best-effort: hides detected consent banners with CSS. It doesn't reject cookies for you, and may occasionally hide the wrong element or miss a banner. Takes effect on the next page load.</span>
           </label>
         </div>
-        <p class="set-footnote">Settings sync across Chrome when signed in.</p>
+        <div class="set-section">
+          <div class="set-label">Cookies &amp; tracking</div>
+          <label class="set-row set-row-col">
+            <span class="set-row-top">
+              <span class="set-row-text">Show tracker count on icon</span>
+              <input type="checkbox" class="toggle" id="set-badge" />
+            </span>
+            <span class="set-hint">Displays the number of known trackers a site contacts as a badge on the toolbar icon.</span>
+          </label>
+          <label class="set-row set-row-col">
+            <span class="set-row-top">
+              <span class="set-row-text">Auto-clean tracker cookies</span>
+              <input type="checkbox" class="toggle" id="set-autoclean" />
+            </span>
+            <span class="set-hint">Automatically removes cookies from known tracker &amp; ad domains when you close tabs. First-party and login cookies are never touched.</span>
+          </label>
+          <button type="button" class="set-action" id="clean-now">Clean tracker cookies now</button>
+          <div class="set-action-result" id="clean-result" role="status"></div>
+        </div>
+        <p class="set-footnote">Settings sync across Chrome when signed in. All cleaning happens on your device.</p>
       </div>
     </div>
 

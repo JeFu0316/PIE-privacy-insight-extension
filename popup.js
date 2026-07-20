@@ -565,7 +565,8 @@ async function fetchNetworkLog() {
 
 function statusInfo(status) {
   if (status === null || status === undefined) return { cls: 'pending', text: '…' };
-  if (status === 'blocked') return { cls: 'err', text: 'blocked' };
+  // 'blocked' kept for backward compatibility with any pre-existing log entries.
+  if (status === 'failed' || status === 'blocked') return { cls: 'err', text: 'failed' };
   const n = Number(status);
   if (n >= 200 && n < 300) return { cls: 'ok', text: String(n) };
   if (n >= 300 && n < 400) return { cls: 'warn', text: String(n) };
@@ -820,11 +821,17 @@ function bindSettingsControls(settings) {
   const netEl = document.getElementById('set-network');
   const animEl = document.getElementById('set-animations');
   const bannerEl = document.getElementById('set-bannerhide');
+  const badgeEl = document.getElementById('set-badge');
+  const autoCleanEl = document.getElementById('set-autoclean');
+  const cleanNowBtn = document.getElementById('clean-now');
+  const cleanResult = document.getElementById('clean-result');
   if (notifEl) notifEl.checked = settings.thirdPartyNotifications;
   if (ipEl) ipEl.checked = settings.ipLookupEnabled;
   if (netEl) netEl.checked = settings.networkMonitoring;
   if (animEl) animEl.checked = settings.animations;
   if (bannerEl) bannerEl.checked = settings.bannerAutoHide;
+  if (badgeEl) badgeEl.checked = settings.trackerBadge;
+  if (autoCleanEl) autoCleanEl.checked = settings.autoClean;
   syncThemeControls(settings.theme);
 
   document.querySelectorAll('#set-theme [data-theme]').forEach((btn) => {
@@ -866,6 +873,44 @@ function bindSettingsControls(settings) {
   if (bannerEl) {
     bannerEl.addEventListener('change', async () => {
       popupSettings = await PIE_SETTINGS.save({ bannerAutoHide: bannerEl.checked });
+    });
+  }
+
+  if (badgeEl) {
+    badgeEl.addEventListener('change', async () => {
+      popupSettings = await PIE_SETTINGS.save({ trackerBadge: badgeEl.checked });
+    });
+  }
+
+  if (autoCleanEl) {
+    autoCleanEl.addEventListener('change', async () => {
+      popupSettings = await PIE_SETTINGS.save({ autoClean: autoCleanEl.checked });
+    });
+  }
+
+  if (cleanNowBtn) {
+    cleanNowBtn.addEventListener('click', () => {
+      cleanNowBtn.disabled = true;
+      if (cleanResult) cleanResult.textContent = 'Cleaning…';
+      try {
+        chrome.runtime.sendMessage({ type: 'CLEAN_TRACKER_COOKIES' }, (resp) => {
+          cleanNowBtn.disabled = false;
+          if (chrome.runtime.lastError) {
+            if (cleanResult) cleanResult.textContent = 'Could not clean right now.';
+            return;
+          }
+          const n = (resp && resp.removed) || 0;
+          if (cleanResult) {
+            cleanResult.textContent = n > 0
+              ? 'Removed ' + n + ' tracker cookie' + (n !== 1 ? 's' : '') + '.'
+              : 'No tracker cookies found.';
+          }
+          if (n > 0) showCookies();
+        });
+      } catch (_) {
+        cleanNowBtn.disabled = false;
+        if (cleanResult) cleanResult.textContent = 'Could not clean right now.';
+      }
     });
   }
 }

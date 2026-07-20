@@ -17,7 +17,10 @@
     ipLookupEnabled: false,
     networkMonitoring: true,
     animations: true,
-    bannerAutoHide: false
+    bannerAutoHide: false,
+    trackerBadge: true,
+    autoClean: false,
+    autoCleanAllowlist: []
   });
 
   const VALID = {
@@ -45,6 +48,16 @@
     }
     if (typeof raw.bannerAutoHide === 'boolean') {
       out.bannerAutoHide = raw.bannerAutoHide;
+    }
+    if (typeof raw.trackerBadge === 'boolean') {
+      out.trackerBadge = raw.trackerBadge;
+    }
+    if (typeof raw.autoClean === 'boolean') {
+      out.autoClean = raw.autoClean;
+    }
+    if (Array.isArray(raw.autoCleanAllowlist)) {
+      out.autoCleanAllowlist = raw.autoCleanAllowlist
+        .filter(function (x) { return typeof x === 'string' && x; });
     }
 
     out.schemaVersion = SCHEMA_VERSION;

@@ -290,6 +290,11 @@ body.settings-open .icon-btn#settings-btn { background: var(--card-2); color: va
 .set-row-text { font-size: 12.5px; font-weight: 600; }
 .set-hint { font-size: 11px; color: var(--text-3); line-height: 1.45; margin-top: 6px; display: block; }
 .set-footnote { font-size: 10.5px; color: var(--text-3); text-align: center; margin: 8px 0 0; }
+.set-action { width: 100%; font-size: 12px; font-weight: 600; font-family: inherit; border: 1px solid var(--line);
+  background: var(--card); color: var(--brand); padding: 9px 12px; border-radius: 10px; cursor: pointer; }
+.set-action:hover { background: var(--card-2); }
+.set-action:disabled { opacity: .6; cursor: default; }
+.set-action-result { font-size: 11px; color: var(--none-fg); text-align: center; min-height: 14px; margin-top: 7px; }
 .toggle { appearance: none; width: 38px; height: 22px; border-radius: 999px; background: var(--line);
   position: relative; cursor: pointer; flex: none; transition: background .15s; }
 .toggle::after { content: ''; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px;

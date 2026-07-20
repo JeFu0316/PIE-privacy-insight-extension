@@ -165,6 +165,19 @@ surfaced in settings.
 3. **Theming**: CSS-variable themes + selector, riding on the settings layer (P3).
 4. **Enhancements**: bulk delete + breakage warning (#5); optional best-effort
    banner hide (#2, if approved). **Done — bulk delete + best-effort banner hide both shipped.**
+5. **Retention / active value (Phase A)**: convert P.I.E from passive insight to an
+   active tool, prompted by tester feedback that it had "limited usage."
+   - **Toolbar badge tracker count** — the icon shows how many known trackers the
+     current tab contacted (setting `trackerBadge`, on by default). Replaces the
+     old HTTPS ✔/! badge; HTTPS still shows in the popup site bar + Security tab.
+   - **Cookie Auto-Clean** — opt-in (`autoClean`, off by default). Removes cookies
+     from known tracker/ad domains (never first-party/logins; skips Consent CMPs so
+     banners don't reappear) on tab close, debounced. Respects `autoCleanAllowlist`
+     (base domains). Also a manual "Clean tracker cookies now" button in settings.
+     All on-device via `chrome.cookies` — no new permissions.
+   - **Deferred:** real header-level blocking via `declarativeNetRequest` (needs a
+     new manifest permission) — revisit after Auto-Clean proves itself. Also on the
+     backlog: fingerprinting detection, weekly privacy report, permission auditor.
 
 Each phase ends with a review pass and a check-in before the next begins.
 

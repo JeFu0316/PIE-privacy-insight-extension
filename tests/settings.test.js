@@ -39,6 +39,13 @@ const { PIE_SETTINGS } = ctx;
   ok('bannerAutoHide default off', PIE_SETTINGS.mergeWithDefaults(null).bannerAutoHide === false);
   ok('bannerAutoHide can enable', PIE_SETTINGS.mergeWithDefaults({ bannerAutoHide: true }).bannerAutoHide === true);
   ok('bannerAutoHide ignores non-boolean', PIE_SETTINGS.mergeWithDefaults({ bannerAutoHide: 'yes' }).bannerAutoHide === false);
+  ok('trackerBadge default on', PIE_SETTINGS.mergeWithDefaults(null).trackerBadge === true);
+  ok('trackerBadge can disable', PIE_SETTINGS.mergeWithDefaults({ trackerBadge: false }).trackerBadge === false);
+  ok('autoClean default off', PIE_SETTINGS.mergeWithDefaults(null).autoClean === false);
+  ok('autoClean can enable', PIE_SETTINGS.mergeWithDefaults({ autoClean: true }).autoClean === true);
+  ok('autoCleanAllowlist default empty array', Array.isArray(PIE_SETTINGS.mergeWithDefaults(null).autoCleanAllowlist) && PIE_SETTINGS.mergeWithDefaults(null).autoCleanAllowlist.length === 0);
+  ok('autoCleanAllowlist keeps string entries', (() => { const a = PIE_SETTINGS.mergeWithDefaults({ autoCleanAllowlist: ['example.com', 5, '', 'foo.org'] }).autoCleanAllowlist; return a.length === 2 && a[0] === 'example.com' && a[1] === 'foo.org'; })());
+  ok('autoCleanAllowlist ignores non-array', Array.isArray(PIE_SETTINGS.mergeWithDefaults({ autoCleanAllowlist: 'nope' }).autoCleanAllowlist) && PIE_SETTINGS.mergeWithDefaults({ autoCleanAllowlist: 'nope' }).autoCleanAllowlist.length === 0);
   ok('schemaVersion always current', PIE_SETTINGS.mergeWithDefaults({}).schemaVersion === PIE_SETTINGS.SCHEMA_VERSION);
 
   stored = {};
