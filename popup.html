@@ -7,9 +7,10 @@
     <link rel="stylesheet" href="popup.css" />
   </head>
   <body>
+    <div class="bg-fx" id="bg-fx" aria-hidden="true"></div>
     <div class="head">
       <div class="logo" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg>
+        <img src="pie128.png" alt="" width="30" height="30" />
       </div>
       <div>
         <div class="brand-name">P.I.E</div>
@@ -85,11 +86,33 @@
             <button type="button" class="swatch" data-theme="dracula"><span class="sw-prev sw-dracula"><i></i><i></i><i></i></span><span class="sw-name">Dracula</span></button>
             <button type="button" class="swatch" data-theme="nord"><span class="sw-prev sw-nord"><i></i><i></i><i></i></span><span class="sw-name">Nord</span></button>
             <button type="button" class="swatch" data-theme="colorblind"><span class="sw-prev sw-colorblind"><i></i><i></i><i></i></span><span class="sw-name">Colour-safe</span></button>
+            <button type="button" class="swatch" data-theme="custom"><span class="sw-prev sw-custom"><i></i><i></i><i></i></span><span class="sw-name">Custom</span></button>
+          </div>
+          <div class="custom-editor" id="custom-editor" hidden>
+            <div class="ce-grid">
+              <label class="ce-row"><span>Background</span><input type="color" id="ce-bg" data-key="bg" /></label>
+              <label class="ce-row"><span>Surface</span><input type="color" id="ce-surface" data-key="surface" /></label>
+              <label class="ce-row"><span>Brand</span><input type="color" id="ce-brand" data-key="brand" /></label>
+              <label class="ce-row"><span>Accent</span><input type="color" id="ce-accent" data-key="accent" /></label>
+              <label class="ce-row"><span>Text</span><input type="color" id="ce-text" data-key="text" /></label>
+              <label class="ce-row"><span>High risk</span><input type="color" id="ce-danger" data-key="danger" /></label>
+            </div>
+            <button type="button" class="ce-reset" id="ce-reset">Reset custom colours</button>
           </div>
           <label class="set-row" style="margin-top:8px;">
             <span class="set-row-text">Smooth animations</span>
             <input type="checkbox" class="toggle" id="set-animations" />
           </label>
+          <div class="set-row set-row-col" style="cursor:default;">
+            <span class="set-row-text" style="margin-bottom:8px;">Background animation</span>
+            <div class="seg-control" id="set-bganim" role="group" aria-label="Background animation">
+              <button type="button" class="seg-btn" data-anim="none">Off</button>
+              <button type="button" class="seg-btn" data-anim="aurora">Aurora</button>
+              <button type="button" class="seg-btn" data-anim="particles">Particles</button>
+              <button type="button" class="seg-btn" data-anim="shimmer">Shimmer</button>
+            </div>
+            <span class="set-hint">Animated backdrop behind the popup. Disabled automatically when “Smooth animations” is off or your system requests reduced motion.</span>
+          </div>
         </div>
         <div class="set-section">
           <div class="set-label">Privacy &amp; alerts</div>

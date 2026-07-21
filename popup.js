@@ -751,7 +751,7 @@ function setupTabs(initialTab) {
   if (start) activateTab(start);
 }
 
-const THEME_ORDER = ['system', 'light', 'dark', 'catppuccin', 'dracula', 'nord', 'colorblind'];
+const THEME_ORDER = ['system', 'light', 'dark', 'catppuccin', 'dracula', 'nord', 'colorblind', 'custom'];
 const PALETTE_ICON = '<circle cx="13.5" cy="6.5" r="1.5"/><circle cx="17.5" cy="10.5" r="1.5"/><circle cx="8.5" cy="7.5" r="1.5"/><circle cx="6.5" cy="12.5" r="1.5"/><path d="M12 2a10 10 0 0 0 0 20c1.1 0 2-.9 2-2 0-.5-.2-1-.5-1.3-.3-.4-.5-.8-.5-1.2 0-1 .8-1.5 1.5-1.5H16a6 6 0 0 0 6-6c0-4.4-4.5-8-10-8z"/>';
 const THEME_ICON = {
   system: '<rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/>',
@@ -760,11 +760,13 @@ const THEME_ICON = {
   catppuccin: PALETTE_ICON,
   dracula: PALETTE_ICON,
   nord: PALETTE_ICON,
-  colorblind: PALETTE_ICON
+  colorblind: PALETTE_ICON,
+  custom: PALETTE_ICON
 };
 const THEME_LABEL = {
   system: 'System', light: 'Light', dark: 'Dark',
-  catppuccin: 'Catppuccin', dracula: 'Dracula', nord: 'Nord', colorblind: 'Colour-safe'
+  catppuccin: 'Catppuccin', dracula: 'Dracula', nord: 'Nord',
+  colorblind: 'Colour-safe', custom: 'Custom'
 };
 
 function applyTheme(state) {
@@ -781,6 +783,28 @@ function syncThemeControls(theme) {
   document.querySelectorAll('#set-theme [data-theme]').forEach((btn) => {
     btn.classList.toggle('active', btn.dataset.theme === theme);
   });
+  const editor = document.getElementById('custom-editor');
+  if (editor) editor.hidden = theme !== 'custom';
+}
+
+const CUSTOM_VAR = {
+  bg: '--c-bg', surface: '--c-surface', brand: '--c-brand',
+  accent: '--c-accent', text: '--c-text', danger: '--c-danger'
+};
+
+// Push the 6 curated colours onto :root so the [data-theme="custom"] rules
+// (which derive the rest via color-mix) have values to work from.
+function applyCustomVars(custom) {
+  const colors = PIE_SETTINGS.sanitizeCustomTheme(custom);
+  const style = document.documentElement.style;
+  Object.keys(CUSTOM_VAR).forEach((k) => style.setProperty(CUSTOM_VAR[k], colors[k]));
+  const sw = document.querySelector('#set-theme [data-theme="custom"] .sw-prev');
+  if (sw && sw.children.length >= 3) {
+    sw.children[0].style.background = colors.brand;
+    sw.children[1].style.background = colors.surface;
+    sw.children[2].style.background = colors.bg;
+  }
+  return colors;
 }
 
 async function setTheme(theme) {
@@ -801,8 +825,21 @@ function setupTheme(initialTheme) {
   });
 }
 
+function prefersReducedMotion() {
+  return typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+// Background animation only runs when the master "Smooth animations" toggle is on
+// and the OS isn't requesting reduced motion.
+function applyBackgroundFx() {
+  const s = popupSettings || {};
+  const on = s.animations !== false && !prefersReducedMotion();
+  document.body.dataset.anim = on ? (s.backgroundAnim || 'none') : 'none';
+}
+
 function applyMotion(enabled) {
   document.documentElement.classList.toggle('reduce-motion', enabled === false);
+  applyBackgroundFx();
 }
 
 function openSettingsPanel() {
@@ -813,6 +850,50 @@ function openSettingsPanel() {
 function closeSettingsPanel() {
   document.body.classList.remove('settings-open');
   document.getElementById('settings-panel').hidden = true;
+}
+
+function syncBgAnimControls(anim) {
+  document.querySelectorAll('#set-bganim [data-anim]').forEach((btn) => {
+    btn.classList.toggle('active', btn.dataset.anim === (anim || 'aurora'));
+  });
+}
+
+// Live-preview colours on `input`; persist (and lock in the custom theme) on
+// `change` to stay well under chrome.storage.sync write limits.
+function bindCustomEditor(initial) {
+  let working = PIE_SETTINGS.sanitizeCustomTheme(initial);
+  const inputs = document.querySelectorAll('#custom-editor input[type="color"]');
+
+  inputs.forEach((inp) => {
+    const key = inp.dataset.key;
+    if (working[key]) inp.value = working[key];
+
+    inp.addEventListener('input', () => {
+      working = { ...working, [key]: inp.value };
+      applyCustomVars(working);
+      if (document.documentElement.getAttribute('data-theme') !== 'custom') {
+        applyTheme('custom');
+        syncThemeControls('custom');
+      }
+    });
+
+    inp.addEventListener('change', async () => {
+      working = { ...working, [key]: inp.value };
+      popupSettings = await PIE_SETTINGS.save({ theme: 'custom', customTheme: working });
+    });
+  });
+
+  const resetBtn = document.getElementById('ce-reset');
+  if (resetBtn) {
+    resetBtn.addEventListener('click', async () => {
+      working = { ...PIE_SETTINGS.DEFAULT_CUSTOM_THEME };
+      inputs.forEach((inp) => { if (working[inp.dataset.key]) inp.value = working[inp.dataset.key]; });
+      applyCustomVars(working);
+      applyTheme('custom');
+      syncThemeControls('custom');
+      popupSettings = await PIE_SETTINGS.save({ theme: 'custom', customTheme: working });
+    });
+  }
 }
 
 function bindSettingsControls(settings) {
@@ -832,10 +913,23 @@ function bindSettingsControls(settings) {
   if (bannerEl) bannerEl.checked = settings.bannerAutoHide;
   if (badgeEl) badgeEl.checked = settings.trackerBadge;
   if (autoCleanEl) autoCleanEl.checked = settings.autoClean;
+  applyCustomVars(settings.customTheme);
   syncThemeControls(settings.theme);
+  syncBgAnimControls(settings.backgroundAnim);
 
   document.querySelectorAll('#set-theme [data-theme]').forEach((btn) => {
     btn.addEventListener('click', () => setTheme(btn.dataset.theme));
+  });
+
+  bindCustomEditor(settings.customTheme);
+
+  document.querySelectorAll('#set-bganim [data-anim]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const anim = btn.dataset.anim;
+      syncBgAnimControls(anim);
+      popupSettings = await PIE_SETTINGS.save({ backgroundAnim: anim });
+      applyBackgroundFx();
+    });
   });
 
   if (notifEl) {
@@ -865,8 +959,8 @@ function bindSettingsControls(settings) {
 
   if (animEl) {
     animEl.addEventListener('change', async () => {
-      applyMotion(animEl.checked);
       popupSettings = await PIE_SETTINGS.save({ animations: animEl.checked });
+      applyMotion(animEl.checked);
     });
   }
 
@@ -924,7 +1018,9 @@ function setupSettingsPanel() {
 
 document.addEventListener('DOMContentLoaded', async () => {
   popupSettings = await PIE_SETTINGS.load();
+  applyCustomVars(popupSettings.customTheme);
   applyMotion(popupSettings.animations);
+  applyBackgroundFx();
   setupTabs(popupSettings.defaultTab);
   setupTheme(popupSettings.theme);
   bindSettingsControls(popupSettings);

@@ -9,6 +9,18 @@
   const STORAGE_KEY = 'pie_settings';
   const SCHEMA_VERSION = 1;
 
+  // Curated set of colours the custom-theme editor exposes; the rest of the
+  // palette is derived from these via color-mix() in popup.css.
+  const CUSTOM_THEME_KEYS = ['bg', 'surface', 'brand', 'accent', 'text', 'danger'];
+  const DEFAULT_CUSTOM_THEME = Object.freeze({
+    bg: '#1C1B27',
+    surface: '#232232',
+    brand: '#6D5EF6',
+    accent: '#3B82F6',
+    text: '#ECEBF5',
+    danger: '#E5484D'
+  });
+
   const DEFAULTS = Object.freeze({
     schemaVersion: SCHEMA_VERSION,
     theme: 'system',
@@ -17,6 +29,8 @@
     ipLookupEnabled: false,
     networkMonitoring: true,
     animations: true,
+    backgroundAnim: 'aurora',
+    customTheme: { ...DEFAULT_CUSTOM_THEME },
     bannerAutoHide: false,
     trackerBadge: true,
     autoClean: false,
@@ -24,9 +38,21 @@
   });
 
   const VALID = {
-    theme: new Set(['system', 'light', 'dark', 'catppuccin', 'dracula', 'nord', 'colorblind']),
-    defaultTab: new Set(['overview', 'cookies', 'security', 'network'])
+    theme: new Set(['system', 'light', 'dark', 'catppuccin', 'dracula', 'nord', 'colorblind', 'custom']),
+    defaultTab: new Set(['overview', 'cookies', 'security', 'network']),
+    backgroundAnim: new Set(['none', 'aurora', 'particles', 'shimmer'])
   };
+
+  const HEX_RE = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
+
+  function sanitizeCustomTheme(raw) {
+    const out = { ...DEFAULT_CUSTOM_THEME };
+    if (!raw || typeof raw !== 'object') return out;
+    CUSTOM_THEME_KEYS.forEach(function (k) {
+      if (typeof raw[k] === 'string' && HEX_RE.test(raw[k])) out[k] = raw[k];
+    });
+    return out;
+  }
 
   function mergeWithDefaults(raw) {
     const out = { ...DEFAULTS };
@@ -46,6 +72,10 @@
     if (typeof raw.animations === 'boolean') {
       out.animations = raw.animations;
     }
+    if (VALID.backgroundAnim.has(raw.backgroundAnim)) {
+      out.backgroundAnim = raw.backgroundAnim;
+    }
+    out.customTheme = sanitizeCustomTheme(raw.customTheme);
     if (typeof raw.bannerAutoHide === 'boolean') {
       out.bannerAutoHide = raw.bannerAutoHide;
     }
@@ -84,6 +114,9 @@
     STORAGE_KEY,
     SCHEMA_VERSION,
     DEFAULTS,
+    CUSTOM_THEME_KEYS,
+    DEFAULT_CUSTOM_THEME,
+    sanitizeCustomTheme,
     mergeWithDefaults,
     load,
     save

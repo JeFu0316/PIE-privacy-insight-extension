@@ -46,6 +46,19 @@ const { PIE_SETTINGS } = ctx;
   ok('autoCleanAllowlist default empty array', Array.isArray(PIE_SETTINGS.mergeWithDefaults(null).autoCleanAllowlist) && PIE_SETTINGS.mergeWithDefaults(null).autoCleanAllowlist.length === 0);
   ok('autoCleanAllowlist keeps string entries', (() => { const a = PIE_SETTINGS.mergeWithDefaults({ autoCleanAllowlist: ['example.com', 5, '', 'foo.org'] }).autoCleanAllowlist; return a.length === 2 && a[0] === 'example.com' && a[1] === 'foo.org'; })());
   ok('autoCleanAllowlist ignores non-array', Array.isArray(PIE_SETTINGS.mergeWithDefaults({ autoCleanAllowlist: 'nope' }).autoCleanAllowlist) && PIE_SETTINGS.mergeWithDefaults({ autoCleanAllowlist: 'nope' }).autoCleanAllowlist.length === 0);
+  ok('extended theme custom kept', PIE_SETTINGS.mergeWithDefaults({ theme: 'custom' }).theme === 'custom');
+
+  ok('backgroundAnim default aurora', PIE_SETTINGS.mergeWithDefaults(null).backgroundAnim === 'aurora');
+  ok('backgroundAnim valid kept', PIE_SETTINGS.mergeWithDefaults({ backgroundAnim: 'particles' }).backgroundAnim === 'particles');
+  ok('backgroundAnim off kept', PIE_SETTINGS.mergeWithDefaults({ backgroundAnim: 'none' }).backgroundAnim === 'none');
+  ok('backgroundAnim invalid rejected', PIE_SETTINGS.mergeWithDefaults({ backgroundAnim: 'sparkle' }).backgroundAnim === 'aurora');
+
+  ok('customTheme default has 6 hex keys', (() => { const c = PIE_SETTINGS.mergeWithDefaults(null).customTheme; return PIE_SETTINGS.CUSTOM_THEME_KEYS.every((k) => /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(c[k])); })());
+  ok('customTheme keeps valid hex overrides', (() => { const c = PIE_SETTINGS.mergeWithDefaults({ customTheme: { brand: '#123abc', bg: '#000' } }).customTheme; return c.brand === '#123abc' && c.bg === '#000'; })());
+  ok('customTheme rejects invalid hex, falls back', (() => { const c = PIE_SETTINGS.mergeWithDefaults({ customTheme: { brand: 'red', accent: '#zzzzzz' } }).customTheme; return c.brand === PIE_SETTINGS.DEFAULT_CUSTOM_THEME.brand && c.accent === PIE_SETTINGS.DEFAULT_CUSTOM_THEME.accent; })());
+  ok('customTheme ignores non-object', (() => { const c = PIE_SETTINGS.mergeWithDefaults({ customTheme: 'nope' }).customTheme; return c.text === PIE_SETTINGS.DEFAULT_CUSTOM_THEME.text; })());
+  ok('sanitizeCustomTheme drops unknown keys', (() => { const c = PIE_SETTINGS.sanitizeCustomTheme({ evil: '#fff', brand: '#abcdef' }); return c.evil === undefined && c.brand === '#abcdef'; })());
+
   ok('schemaVersion always current', PIE_SETTINGS.mergeWithDefaults({}).schemaVersion === PIE_SETTINGS.SCHEMA_VERSION);
 
   stored = {};
