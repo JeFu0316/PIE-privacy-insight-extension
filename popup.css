@@ -310,6 +310,11 @@ body.settings-open .icon-btn#settings-btn { background: var(--card-2); color: va
 .sw-dracula i:nth-child(1){background:#bd93f9}.sw-dracula i:nth-child(2){background:#ff79c6}.sw-dracula i:nth-child(3){background:#282a36}
 .sw-nord i:nth-child(1){background:#88c0d0}.sw-nord i:nth-child(2){background:#81a1c1}.sw-nord i:nth-child(3){background:#2e3440}
 .sw-colorblind i:nth-child(1){background:#0072B2}.sw-colorblind i:nth-child(2){background:#E69F00}.sw-colorblind i:nth-child(3){background:#D55E00}
+.set-select { width: 100%; font-size: 12.5px; font-weight: 600; font-family: inherit;
+  color: var(--text); background: var(--card-2); border: 1px solid var(--line);
+  border-radius: 10px; padding: 10px 12px; cursor: pointer; appearance: none; -webkit-appearance: none; }
+.set-select:hover { border-color: var(--text-3); }
+.set-select:focus-visible { outline: 2px solid var(--brand); outline-offset: 1px; }
 .set-row { display: flex; align-items: center; justify-content: space-between; gap: 12px;
   padding: 11px 12px; background: var(--card-2); border-radius: 12px; margin-bottom: 8px; cursor: pointer; }
 .set-row-col { flex-direction: column; align-items: stretch; cursor: pointer; }

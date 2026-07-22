@@ -14,6 +14,7 @@ const vm = require('vm');
 
 const repoRoot = path.join(__dirname, '..');
 const dbSrc = fs.readFileSync(path.join(repoRoot, 'cookie-database.js'), 'utf8');
+const i18nSrc = fs.readFileSync(path.join(repoRoot, 'i18n.js'), 'utf8');
 const popupSrc = fs.readFileSync(path.join(repoRoot, 'popup.js'), 'utf8');
 
 // ---- Minimal browser stubs so popup.js loads headlessly ----
@@ -94,7 +95,7 @@ const assertions = `
 `;
 
 try {
-  vm.runInContext(dbSrc + '\n' + popupSrc + '\n' + assertions, ctx, { filename: 'pie-scoring-combined.js' });
+  vm.runInContext(dbSrc + '\n' + i18nSrc + '\n' + popupSrc + '\n' + assertions, ctx, { filename: 'pie-scoring-combined.js' });
   console.log('All scoring tests passed.');
 } catch (e) {
   console.error(e && e.message ? e.message : e);

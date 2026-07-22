@@ -1,9 +1,10 @@
-importScripts('settings.js', 'tracker-domains.js');
+importScripts('settings.js', 'i18n.js', 'tracker-domains.js');
 
 let bgSettings = PIE_SETTINGS.DEFAULTS;
 
 async function refreshSettings() {
   bgSettings = await PIE_SETTINGS.load();
+  PIE_I18N.setLocale(bgSettings.language);
 }
 
 refreshSettings();
@@ -12,6 +13,8 @@ chrome.storage.onChanged.addListener((changes, area) => {
   if (area === 'sync' && changes[PIE_SETTINGS.STORAGE_KEY]) {
     const wasOn = bgSettings.thirdPartyNotifications;
     bgSettings = PIE_SETTINGS.mergeWithDefaults(changes[PIE_SETTINGS.STORAGE_KEY].newValue);
+    // Keep notification wording in sync with the chosen language.
+    PIE_I18N.setLocale(bgSettings.language);
     // If the user just turned notifications off, clear any that are still showing.
     if (wasOn && !bgSettings.thirdPartyNotifications) clearAllNotifications();
     // Refresh badges so a toggled trackerBadge setting takes effect immediately.
@@ -119,8 +122,8 @@ chrome.webRequest.onHeadersReceived.addListener(
 
       const count = st.domains.size;
       const message = count === 1
-        ? `${cookieDomain} set a third-party cookie on ${pageDomain}. It may track you across sites.`
-        : `${count} third-party domains set cookies on ${pageDomain}. They may track you across sites.`;
+        ? PIE_I18N.t('notif.one', { domain: cookieDomain, page: pageDomain })
+        : PIE_I18N.t('notif.many', { count: count, page: pageDomain });
 
       if (!st.notifId) {
         // First one this page: create a single notification (one desktop pop).
@@ -128,7 +131,7 @@ chrome.webRequest.onHeadersReceived.addListener(
         chrome.notifications.create(st.notifId, {
           type: 'basic',
           iconUrl: 'pie128.png',
-          title: 'Privacy Alert – Third-Party Cookies',
+          title: PIE_I18N.t('notif.title'),
           message: message,
           priority: 0
         });

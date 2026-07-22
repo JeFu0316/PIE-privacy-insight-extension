@@ -11,6 +11,17 @@ let consentDetected = false;
 let popupSettings = null;
 const thirdPartyHits = new Set();   // third-party domains seen via network (background.js)
 
+const APP_VERSION = '2.0.2';
+
+// i18n shorthands. Defensive so the engine still loads in the headless test
+// sandbox (where PIE_I18N isn't present) — there they resolve to the key.
+function tr(key, subs) {
+  return (typeof PIE_I18N !== 'undefined' && PIE_I18N) ? PIE_I18N.t(key, subs) : key;
+}
+function trn(key, n, subs) {
+  return (typeof PIE_I18N !== 'undefined' && PIE_I18N) ? PIE_I18N.tn(key, n, subs) : key;
+}
+
 /* ------------------------------------------------------------------ *
  * Engine — cookie value analysis (Sensitivity axis)                  *
  * ------------------------------------------------------------------ */
@@ -70,12 +81,12 @@ function detectPII(cookie) {
     if (!trimmed) continue;
 
     if (emailRe.test(trimmed)) {
-      checks.push({ type: 'email', score: 0.95, reason: 'Contains email address' });
+      checks.push({ type: 'email', score: 0.95, reasonKey: 'pii.email' });
     }
     if (phoneDigitsRe.test(trimmed)) {
       const digits = trimmed.replace(/\D/g, '');
       if (digits.length >= 10 && digits.length <= 15) {
-        checks.push({ type: 'phone', score: 0.7, reason: 'Contains plausible phone number' });
+        checks.push({ type: 'phone', score: 0.7, reasonKey: 'pii.phone' });
       }
     }
     if (jwtRe.test(trimmed)) {
@@ -85,29 +96,29 @@ function detectPII(cookie) {
         if (json) {
           const obj = JSON.parse(json);
           if (obj && (obj.email || obj.sub || obj.user || obj.user_id || obj.id)) {
-            checks.push({ type: 'jwt', score: 0.95, reason: 'JWT includes user identifiers' });
+            checks.push({ type: 'jwt', score: 0.95, reasonKey: 'pii.jwtId' });
           } else {
-            checks.push({ type: 'jwt', score: 0.8, reason: 'JWT token' });
+            checks.push({ type: 'jwt', score: 0.8, reasonKey: 'pii.jwt' });
           }
         } else {
-          checks.push({ type: 'jwt', score: 0.8, reason: 'JWT token' });
+          checks.push({ type: 'jwt', score: 0.8, reasonKey: 'pii.jwt' });
         }
       } catch (_) {
-        checks.push({ type: 'jwt', score: 0.8, reason: 'JWT token' });
+        checks.push({ type: 'jwt', score: 0.8, reasonKey: 'pii.jwt' });
       }
     }
     const ccCandidates = trimmed.match(/[0-9][0-9 \-]{10,}[0-9]/g);
     if (ccCandidates) {
       for (const cc of ccCandidates) {
         if (luhnCheck(cc)) {
-          checks.push({ type: 'credit_card', score: 0.98, reason: 'Possible credit card number (passes Luhn check)' });
+          checks.push({ type: 'credit_card', score: 0.98, reasonKey: 'pii.creditCard' });
           break;
         }
       }
     }
     const nameStr = safeDecodeURIComponent(trimmed);
     if (/^[A-Z][a-z]{2,}\s[A-Z][a-z]{2,}$/.test(nameStr) && nameStr.length <= 40) {
-      checks.push({ type: 'name', score: 0.35, reason: 'Full name-like pattern (low confidence)' });
+      checks.push({ type: 'name', score: 0.35, reasonKey: 'pii.name' });
     }
   }
 
@@ -158,7 +169,7 @@ function isThirdPartyCookie(cookie) {
   return !!(host && cd && !cd.endsWith(host));
 }
 
-const AXIS_TEXT = { none: 'None', low: 'Low', medium: 'Medium', high: 'High' };
+function axisText(level) { return tr('axis.' + level); }
 
 function classifyTracking(cookie) {
   const rec = lookupCookieDB(cookie.name);
@@ -209,16 +220,16 @@ function overallTracking(cookies) {
 
 function getAttributeWarnings(cookie) {
   const issues = [];
-  if (!cookie.secure) issues.push('Missing Secure');
-  if (!cookie.httpOnly) issues.push('Missing HttpOnly');
-  if (!cookie.sameSite || cookie.sameSite === 'no_restriction') issues.push('SameSite not Strict/Lax');
-  if (cookie.sameSite === 'no_restriction' && !cookie.secure) issues.push('SameSite=None without Secure');
-  if (cookie.expirationDate && cookie.expirationDate > (Date.now() / 1000 + 31536000)) issues.push('Very long expiry');
+  if (!cookie.secure) issues.push(tr('attr.missingSecure'));
+  if (!cookie.httpOnly) issues.push(tr('attr.missingHttpOnly'));
+  if (!cookie.sameSite || cookie.sameSite === 'no_restriction') issues.push(tr('attr.sameSiteWeak'));
+  if (cookie.sameSite === 'no_restriction' && !cookie.secure) issues.push(tr('attr.sameSiteNoneInsecure'));
+  if (cookie.expirationDate && cookie.expirationDate > (Date.now() / 1000 + 31536000)) issues.push(tr('attr.longExpiry'));
   return issues;
 }
 
 function formatExpiry(cookie) {
-  if (!cookie.expirationDate) return 'Session cookie';
+  if (!cookie.expirationDate) return tr('expiry.session');
   const d = new Date(cookie.expirationDate * 1000);
   return d.toISOString().slice(0, 10);
 }
@@ -238,11 +249,11 @@ async function getIPAddress(hostname) {
     const data = await res.json();
     if (data.Answer && data.Answer.length > 0) {
       const record = data.Answer.find(a => a.type === 1);
-      return record ? record.data : 'IP not found';
+      return record ? record.data : tr('ip.notFound');
     }
-    return 'IP not found';
+    return tr('ip.notFound');
   } catch (e) {
-    return 'IP unavailable';
+    return tr('ip.unavailable');
   }
 }
 
@@ -259,7 +270,7 @@ async function deleteCookie(cookie) {
   } catch (e) {}
 }
 
-const BREAKAGE_WARNING = 'Deleting cookies may log you out or break features on this site. Continue?';
+function breakageWarning() { return tr('confirm.breakage'); }
 
 /* ------------------------------------------------------------------ *
  * Rendering — helpers                                                *
@@ -286,7 +297,7 @@ function makeRing(titleText, level, subText) {
       `<circle cx="48" cy="48" r="40" fill="none" stroke="var(--line)" stroke-width="9"/>` +
       `<circle cx="48" cy="48" r="40" fill="none" stroke="${LEVEL_STROKE[level]}" stroke-width="9" stroke-linecap="round" stroke-dasharray="${Math.round(circ)}" stroke-dashoffset="${offset}"/>` +
     `</svg>` +
-    `<div class="val"><b style="color:${LEVEL_FG[level]}">${AXIS_TEXT[level]}</b><span>${subText}</span></div>`;
+    `<div class="val"><b style="color:${LEVEL_FG[level]}">${axisText(level)}</b><span>${subText}</span></div>`;
   card.appendChild(ring);
   card.appendChild(el('div', 'title', titleText));
   return card;
@@ -321,10 +332,10 @@ function renderSiteBar() {
   const ip = document.getElementById('site-ip');
   const badge = document.getElementById('https-badge');
   const lock = document.getElementById('site-lock');
-  if (dom) dom.textContent = currentSiteHost || 'This page';
-  if (ip) ip.textContent = (currentIp ? currentIp + ' · ' : '') + cookieData.length + ' cookie' + (cookieData.length !== 1 ? 's' : '');
+  if (dom) dom.textContent = currentSiteHost || tr('site.thisPage');
+  if (ip) ip.textContent = (currentIp ? currentIp + ' · ' : '') + trn('site.cookies', cookieData.length);
   if (badge) {
-    badge.textContent = currentSecure ? 'HTTPS Secure' : 'Not secure';
+    badge.textContent = currentSecure ? tr('site.httpsSecure') : tr('site.notSecure');
     badge.className = 'pill ' + (currentSecure ? 'secure' : 'insecure');
   }
   if (lock) lock.className = 'lock' + (currentSecure ? '' : ' insecure');
@@ -337,26 +348,26 @@ function renderOverview() {
 
   const rings = document.getElementById('ov-rings');
   rings.innerHTML = '';
-  rings.appendChild(makeRing('Personal data exposure', sens.level,
-    sens.count > 0 ? sens.count + ' with PII' : 'no PII'));
-  rings.appendChild(makeRing('Cross-site tracking', track.level,
-    track.knownTrackers > 0 ? track.knownTrackers + ' tracker' + (track.knownTrackers !== 1 ? 's' : '') : 'none known'));
+  rings.appendChild(makeRing(tr('overview.sensTitle'), sens.level,
+    sens.count > 0 ? tr('overview.withPII', { n: sens.count }) : tr('overview.noPII')));
+  rings.appendChild(makeRing(tr('overview.trackTitle'), track.level,
+    track.knownTrackers > 0 ? trn('overview.trackers', track.knownTrackers) : tr('overview.noneKnown')));
 
   const stats = document.getElementById('ov-stats');
   stats.innerHTML = '';
-  stats.appendChild(statTile('p', ICO.cookie, cookieData.length, 'Cookies'));
-  stats.appendChild(statTile('b', ICO.third, thirdParty, 'Third-party'));
-  stats.appendChild(statTile('a', ICO.track, track.knownTrackers, 'Known trackers'));
-  stats.appendChild(statTile('g', ICO.check, sens.count, 'With PII'));
+  stats.appendChild(statTile('p', ICO.cookie, cookieData.length, tr('stats.cookies')));
+  stats.appendChild(statTile('b', ICO.third, thirdParty, tr('stats.thirdParty')));
+  stats.appendChild(statTile('a', ICO.track, track.knownTrackers, tr('stats.knownTrackers')));
+  stats.appendChild(statTile('g', ICO.check, sens.count, tr('stats.withPII')));
 
   const hint = document.getElementById('ov-hint');
   let msg;
   if (sens.count === 0 && track.knownTrackers === 0) {
-    msg = 'No personal data in cookies and no known trackers detected on this site.';
+    msg = tr('overview.hintClean');
   } else if (sens.count === 0) {
-    msg = 'No personal data stored in cookies, but this site loads known cross-site trackers. Two independent readings — not one blended score.';
+    msg = tr('overview.hintTrackersOnly');
   } else {
-    msg = sens.count + ' cookie' + (sens.count !== 1 ? 's' : '') + ' may contain personal data. Sensitivity and tracking are shown separately so real PII is never confused with ordinary tracker IDs.';
+    msg = trn('overview.hintPII', sens.count);
   }
   hint.textContent = msg;
 }
@@ -366,16 +377,17 @@ function cookieDetail(cookie) {
   const findings = detectPII(cookie);
   const track = classifyTracking(cookie);
 
+  const yes = tr('detail.yes'), no = tr('detail.no');
   const rows = [];
-  if (findings.length) rows.push(['Finding', findings.map(f => f.reason).join('; ')]);
-  if (track.known) rows.push(['Tracker', track.category + (track.platform ? ' — ' + track.platform : '')]);
-  rows.push(['Domain', cookie.domain || '—']);
-  rows.push(['Path', cookie.path || '/']);
-  rows.push(['Expires', formatExpiry(cookie)]);
-  rows.push(['Secure · HttpOnly · SameSite',
-    (cookie.secure ? 'yes' : 'no') + ' · ' + (cookie.httpOnly ? 'yes' : 'no') + ' · ' + (cookie.sameSite || 'unset')]);
+  if (findings.length) rows.push([tr('detail.finding'), findings.map(f => tr(f.reasonKey)).join('; ')]);
+  if (track.known) rows.push([tr('detail.tracker'), track.category + (track.platform ? ' — ' + track.platform : '')]);
+  rows.push([tr('detail.domain'), cookie.domain || '—']);
+  rows.push([tr('detail.path'), cookie.path || '/']);
+  rows.push([tr('detail.expires'), formatExpiry(cookie)]);
+  rows.push([tr('detail.flags'),
+    (cookie.secure ? yes : no) + ' · ' + (cookie.httpOnly ? yes : no) + ' · ' + (cookie.sameSite || tr('detail.unset'))]);
   const attrs = getAttributeWarnings(cookie);
-  if (attrs.length) rows.push(['Attribute notes', attrs.join(' • ')]);
+  if (attrs.length) rows.push([tr('detail.attrNotes'), attrs.join(' • ')]);
 
   for (const [k, v] of rows) {
     const kv = el('div', 'kv');
@@ -385,26 +397,26 @@ function cookieDetail(cookie) {
   }
 
   const full = el('div', 'full');
-  full.textContent = cookie.value || '(empty)';
+  full.textContent = cookie.value || tr('detail.empty');
   det.appendChild(full);
 
   const acts = el('div', 'acts');
-  const showBtn = el('button', null, 'Show value');
+  const showBtn = el('button', null, tr('detail.showValue'));
   showBtn.addEventListener('click', () => {
     const shown = full.classList.toggle('show');
-    showBtn.textContent = shown ? 'Hide value' : 'Show value';
+    showBtn.textContent = shown ? tr('detail.hideValue') : tr('detail.showValue');
   });
-  const copyBtn = el('button', null, 'Copy');
+  const copyBtn = el('button', null, tr('detail.copy'));
   copyBtn.addEventListener('click', async () => {
     try {
       await navigator.clipboard.writeText(cookie.value || '');
-      copyBtn.textContent = 'Copied';
-      setTimeout(() => (copyBtn.textContent = 'Copy'), 1200);
+      copyBtn.textContent = tr('detail.copied');
+      setTimeout(() => (copyBtn.textContent = tr('detail.copy')), 1200);
     } catch (e) {}
   });
-  const delBtn = el('button', 'del', 'Delete');
+  const delBtn = el('button', 'del', tr('detail.delete'));
   delBtn.addEventListener('click', async () => {
-    if (!window.confirm(BREAKAGE_WARNING)) return;
+    if (!window.confirm(breakageWarning())) return;
     await deleteCookie(cookie);
     cookieData = cookieData.filter(c => !(c.name === cookie.name && c.domain === cookie.domain && c.path === cookie.path));
     renderAll();
@@ -427,11 +439,11 @@ function cookieRow(cookie) {
   const name = el('div', 'cname');
   name.appendChild(el('strong', null, cookie.name));
   if (track.known && track.platform) name.appendChild(el('span', 'plat', track.platform));
-  const type = el('span', 'type ' + (thirdParty ? 'third' : 'first'), thirdParty ? '3rd' : '1st');
+  const type = el('span', 'type ' + (thirdParty ? 'third' : 'first'), thirdParty ? tr('cookie.third') : tr('cookie.first'));
   name.appendChild(type);
 
-  const sBadge = el('span', 'badge b-' + sLevel, 'PII: ' + AXIS_TEXT[sLevel]);
-  const tBadge = el('span', 'badge b-' + track.level, 'Track: ' + AXIS_TEXT[track.level]);
+  const sBadge = el('span', 'badge b-' + sLevel, tr('cookie.piiBadge', { level: axisText(sLevel) }));
+  const tBadge = el('span', 'badge b-' + track.level, tr('cookie.trackBadge', { level: axisText(track.level) }));
 
   sum.appendChild(name);
   sum.appendChild(sBadge);
@@ -450,7 +462,7 @@ function renderCookies() {
   actions.innerHTML = '';
 
   if (!cookieData.length) {
-    list.appendChild(el('div', 'empty', 'No cookies found for this site.'));
+    list.appendChild(el('div', 'empty', tr('cookies.empty')));
     return;
   }
 
@@ -462,14 +474,14 @@ function renderCookies() {
   const sens = overallSensitivity(cookieData);
   const track = overallTracking(cookieData);
   const info = el('span', 't',
-    (sens.count > 0 ? sens.count + ' with PII' : 'no PII') + ' · ' +
-    (track.knownTrackers > 0 ? track.knownTrackers + ' known tracker' + (track.knownTrackers !== 1 ? 's' : '') : 'no known trackers'));
+    (sens.count > 0 ? tr('overview.withPII', { n: sens.count }) : tr('overview.noPII')) + ' · ' +
+    (track.knownTrackers > 0 ? trn('cookies.knownTrackers', track.knownTrackers) : tr('cookies.noKnownTrackers')));
   const flagged = cookieData.filter(c => sensitivityLevel(detectPII(c)) !== 'none');
-  const btn = el('button', 'btn-danger', 'Delete all flagged');
+  const btn = el('button', 'btn-danger', tr('cookies.deleteAllFlagged'));
   if (!flagged.length) btn.disabled = true;
   btn.addEventListener('click', async () => {
     if (!flagged.length) return;
-    if (!window.confirm(flagged.length + ' cookie(s) contain personal data. ' + BREAKAGE_WARNING)) return;
+    if (!window.confirm(trn('confirm.flagged', flagged.length) + breakageWarning())) return;
     for (const c of flagged) await deleteCookie(c);
     const gone = new Set(flagged.map(c => c.name + '|' + c.domain + '|' + c.path));
     cookieData = cookieData.filter(c => !gone.has(c.name + '|' + c.domain + '|' + c.path));
@@ -492,15 +504,15 @@ function renderSecurity() {
   svgWrap.innerHTML = lockSvg;
   stRow.appendChild(svgWrap.firstChild);
   const info = el('div');
-  info.appendChild(el('div', 'h', currentSecure ? 'Secure (HTTPS)' : 'Not secure (HTTP)'));
+  info.appendChild(el('div', 'h', currentSecure ? tr('security.secureTitle') : tr('security.insecureTitle')));
   info.appendChild(el('div', 's', currentSecure
-    ? 'Encrypted · your data is protected in transit'
-    : 'Unencrypted · avoid entering sensitive information'));
+    ? tr('security.secureDesc')
+    : tr('security.insecureDesc')));
   stRow.appendChild(info);
   card.appendChild(stRow);
   wrap.appendChild(card);
 
-  wrap.appendChild(el('div', 'sec-label', 'Cookie attribute warnings'));
+  wrap.appendChild(el('div', 'sec-label', tr('security.attrWarnings')));
   const warned = cookieData
     .map(c => ({ c, issues: getAttributeWarnings(c) }))
     .filter(x => x.issues.length);
@@ -514,12 +526,12 @@ function renderSecurity() {
     }
     wrap.appendChild(listEl);
   } else {
-    wrap.appendChild(el('div', 'hint', 'No cookie attribute issues found.'));
+    wrap.appendChild(el('div', 'hint', tr('security.noAttrIssues')));
   }
 
   const notes = [];
-  if (thirdPartyHits.size) notes.push('⚠️ ' + thirdPartyHits.size + ' third-party domain' + (thirdPartyHits.size !== 1 ? 's' : '') + ' requested cookies during this visit.');
-  if (consentDetected) notes.push('🍪 Cookie consent banner detected on this site.');
+  if (thirdPartyHits.size) notes.push(trn('security.thirdPartyNote', thirdPartyHits.size));
+  if (consentDetected) notes.push(tr('security.consentNote'));
   if (notes.length) {
     const n = el('div', 'hint');
     n.style.marginTop = '12px';
@@ -541,11 +553,11 @@ function renderAll() {
  * ------------------------------------------------------------------ */
 
 const NET_FILTERS = [
-  { key: 'all', label: 'All', match: () => true },
-  { key: 'xhr', label: 'Fetch/XHR', match: t => t === 'xmlhttprequest' || t === 'fetch' || t === 'ping' || t === 'beacon' },
-  { key: 'script', label: 'Scripts', match: t => t === 'script' },
-  { key: 'image', label: 'Images', match: t => t === 'image' || t === 'imageset' },
-  { key: 'other', label: 'Other', match: t => !['xmlhttprequest', 'fetch', 'ping', 'beacon', 'script', 'image', 'imageset'].includes(t) }
+  { key: 'all', labelKey: 'net.filter.all', match: () => true },
+  { key: 'xhr', labelKey: 'net.filter.xhr', match: t => t === 'xmlhttprequest' || t === 'fetch' || t === 'ping' || t === 'beacon' },
+  { key: 'script', labelKey: 'net.filter.script', match: t => t === 'script' },
+  { key: 'image', labelKey: 'net.filter.image', match: t => t === 'image' || t === 'imageset' },
+  { key: 'other', labelKey: 'net.filter.other', match: t => !['xmlhttprequest', 'fetch', 'ping', 'beacon', 'script', 'image', 'imageset'].includes(t) }
 ];
 let networkFilter = 'all';
 let networkTimer = null;
@@ -566,7 +578,7 @@ async function fetchNetworkLog() {
 function statusInfo(status) {
   if (status === null || status === undefined) return { cls: 'pending', text: '…' };
   // 'blocked' kept for backward compatibility with any pre-existing log entries.
-  if (status === 'failed' || status === 'blocked') return { cls: 'err', text: 'failed' };
+  if (status === 'failed' || status === 'blocked') return { cls: 'err', text: tr('net.statusFailed') };
   const n = Number(status);
   if (n >= 200 && n < 300) return { cls: 'ok', text: String(n) };
   if (n >= 300 && n < 400) return { cls: 'warn', text: String(n) };
@@ -595,7 +607,7 @@ function networkRow(e) {
   const bot = el('div', 'nreq-bot');
   bot.appendChild(el('span', 'ntype', e.type || 'other'));
   if (e.tracker) bot.appendChild(el('span', 'ntag trk', e.tracker.company + ' · ' + e.tracker.category));
-  else if (e.thirdParty) bot.appendChild(el('span', 'ntag tp', 'Third-party'));
+  else if (e.thirdParty) bot.appendChild(el('span', 'ntag tp', tr('net.thirdPartyTag')));
   row.appendChild(bot);
   return row;
 }
@@ -603,8 +615,8 @@ function networkRow(e) {
 function renderNetworkOff(wrap) {
   wrap.innerHTML = '';
   const off = el('div', 'n-off');
-  off.appendChild(el('p', null, 'Network activity monitoring is off. Turn it on to see the requests each page makes — captured on your device, metadata only.'));
-  const btn = el('button', 'n-enable', 'Turn on monitoring');
+  off.appendChild(el('p', null, tr('net.off')));
+  const btn = el('button', 'n-enable', tr('net.turnOn'));
   btn.addEventListener('click', async () => {
     popupSettings = await PIE_SETTINGS.save({ networkMonitoring: true });
     const ne = document.getElementById('set-network');
@@ -633,27 +645,27 @@ async function renderNetwork() {
 
   wrap.innerHTML = '';
   const sum = el('div', 'nsum');
-  sum.appendChild(nsumCell(total, 'requests'));
-  sum.appendChild(nsumCell(thirdParty, 'third-party'));
-  sum.appendChild(nsumCell(trackers, 'trackers', 'trk'));
+  sum.appendChild(nsumCell(total, tr('net.requests')));
+  sum.appendChild(nsumCell(thirdParty, tr('net.thirdParty')));
+  sum.appendChild(nsumCell(trackers, tr('net.trackers'), 'trk'));
   wrap.appendChild(sum);
 
   const filters = el('div', 'nfilters');
   for (const flt of NET_FILTERS) {
-    const chip = el('button', 'nchip' + (flt.key === networkFilter ? ' active' : ''), flt.label);
+    const chip = el('button', 'nchip' + (flt.key === networkFilter ? ' active' : ''), tr(flt.labelKey));
     chip.addEventListener('click', () => { networkFilter = flt.key; renderNetwork(); });
     filters.appendChild(chip);
   }
   wrap.appendChild(filters);
 
   if (!shown.length) {
-    wrap.appendChild(el('div', 'empty', total ? 'No requests match this filter.' : 'No requests captured yet — reload the page to see its activity.'));
+    wrap.appendChild(el('div', 'empty', total ? tr('net.noMatch') : tr('net.noneYet')));
   } else {
     const list = el('div', 'nlist');
     for (const e of shown.slice(0, 150)) list.appendChild(networkRow(e));
     wrap.appendChild(list);
   }
-  wrap.appendChild(el('div', 'nprivacy', 'Observed on your device — metadata only. P.I.E never records request contents or sends this anywhere.'));
+  wrap.appendChild(el('div', 'nprivacy', tr('net.privacy')));
 }
 
 function startNetworkPolling() {
@@ -763,11 +775,9 @@ const THEME_ICON = {
   colorblind: PALETTE_ICON,
   custom: PALETTE_ICON
 };
-const THEME_LABEL = {
-  system: 'System', light: 'Light', dark: 'Dark',
-  catppuccin: 'Catppuccin', dracula: 'Dracula', nord: 'Nord',
-  colorblind: 'Colour-safe', custom: 'Custom'
-};
+// Proper names stay untranslated; generic names are localized via the catalog.
+const THEME_PROPER = { catppuccin: 'Catppuccin', dracula: 'Dracula', nord: 'Nord' };
+function themeLabel(state) { return THEME_PROPER[state] || tr('theme.' + state); }
 
 function applyTheme(state) {
   const root = document.documentElement;
@@ -776,7 +786,7 @@ function applyTheme(state) {
   const icon = document.getElementById('theme-icon');
   const label = document.getElementById('theme-label');
   if (icon) icon.innerHTML = THEME_ICON[state] || PALETTE_ICON;
-  if (label) label.textContent = THEME_LABEL[state] || state;
+  if (label) label.textContent = themeLabel(state);
 }
 
 function syncThemeControls(theme) {
@@ -840,6 +850,54 @@ function applyBackgroundFx() {
 function applyMotion(enabled) {
   document.documentElement.classList.toggle('reduce-motion', enabled === false);
   applyBackgroundFx();
+}
+
+function applyStaticI18n() {
+  if (typeof PIE_I18N === 'undefined') return;
+  PIE_I18N.applyDom();
+  const foot = document.getElementById('foot-status');
+  if (foot) foot.textContent = tr('foot.status', { version: APP_VERSION });
+  document.documentElement.lang = PIE_I18N.getLocale().replace('_', '-');
+}
+
+function populateLanguageSelect(current) {
+  const sel = document.getElementById('set-language');
+  if (!sel || typeof PIE_I18N === 'undefined') return;
+  sel.innerHTML = '';
+  const auto = document.createElement('option');
+  auto.value = 'auto';
+  auto.textContent = tr('language.auto');
+  sel.appendChild(auto);
+  PIE_I18N.AVAILABLE.forEach((code) => {
+    const o = document.createElement('option');
+    o.value = code;
+    o.textContent = PIE_I18N.LOCALE_LABEL[code] || code;
+    sel.appendChild(o);
+  });
+  sel.value = current || 'auto';
+}
+
+// Re-translate the whole popup after a language change, static + dynamic.
+function refreshLanguage(pref) {
+  if (typeof PIE_I18N === 'undefined') return;
+  PIE_I18N.setLocale(pref);
+  applyStaticI18n();
+  populateLanguageSelect(pref);
+  applyTheme(document.documentElement.getAttribute('data-theme') || 'system');
+  renderAll();
+  const active = document.querySelector('.tab.active');
+  if (active && active.dataset.tab === 'network') renderNetwork();
+}
+
+function setupLanguage(settings) {
+  populateLanguageSelect(settings.language);
+  const sel = document.getElementById('set-language');
+  if (sel) {
+    sel.addEventListener('change', async () => {
+      popupSettings = await PIE_SETTINGS.save({ language: sel.value });
+      refreshLanguage(sel.value);
+    });
+  }
 }
 
 function openSettingsPanel() {
@@ -985,25 +1043,23 @@ function bindSettingsControls(settings) {
   if (cleanNowBtn) {
     cleanNowBtn.addEventListener('click', () => {
       cleanNowBtn.disabled = true;
-      if (cleanResult) cleanResult.textContent = 'Cleaning…';
+      if (cleanResult) cleanResult.textContent = tr('settings.cleaning');
       try {
         chrome.runtime.sendMessage({ type: 'CLEAN_TRACKER_COOKIES' }, (resp) => {
           cleanNowBtn.disabled = false;
           if (chrome.runtime.lastError) {
-            if (cleanResult) cleanResult.textContent = 'Could not clean right now.';
+            if (cleanResult) cleanResult.textContent = tr('settings.cleanError');
             return;
           }
           const n = (resp && resp.removed) || 0;
           if (cleanResult) {
-            cleanResult.textContent = n > 0
-              ? 'Removed ' + n + ' tracker cookie' + (n !== 1 ? 's' : '') + '.'
-              : 'No tracker cookies found.';
+            cleanResult.textContent = n > 0 ? trn('settings.cleanResult', n) : tr('settings.cleanNone');
           }
           if (n > 0) showCookies();
         });
       } catch (_) {
         cleanNowBtn.disabled = false;
-        if (cleanResult) cleanResult.textContent = 'Could not clean right now.';
+        if (cleanResult) cleanResult.textContent = tr('settings.cleanError');
       }
     });
   }
@@ -1018,11 +1074,14 @@ function setupSettingsPanel() {
 
 document.addEventListener('DOMContentLoaded', async () => {
   popupSettings = await PIE_SETTINGS.load();
+  if (typeof PIE_I18N !== 'undefined') PIE_I18N.setLocale(popupSettings.language);
+  applyStaticI18n();
   applyCustomVars(popupSettings.customTheme);
   applyMotion(popupSettings.animations);
   applyBackgroundFx();
   setupTabs(popupSettings.defaultTab);
   setupTheme(popupSettings.theme);
+  setupLanguage(popupSettings);
   bindSettingsControls(popupSettings);
   setupSettingsPanel();
   showCookies();

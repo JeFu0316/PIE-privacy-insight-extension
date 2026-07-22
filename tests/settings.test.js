@@ -48,6 +48,11 @@ const { PIE_SETTINGS } = ctx;
   ok('autoCleanAllowlist ignores non-array', Array.isArray(PIE_SETTINGS.mergeWithDefaults({ autoCleanAllowlist: 'nope' }).autoCleanAllowlist) && PIE_SETTINGS.mergeWithDefaults({ autoCleanAllowlist: 'nope' }).autoCleanAllowlist.length === 0);
   ok('extended theme custom kept', PIE_SETTINGS.mergeWithDefaults({ theme: 'custom' }).theme === 'custom');
 
+  ok('language default auto', PIE_SETTINGS.mergeWithDefaults(null).language === 'auto');
+  ok('language valid kept (zh_CN)', PIE_SETTINGS.mergeWithDefaults({ language: 'zh_CN' }).language === 'zh_CN');
+  ok('language valid kept (ru)', PIE_SETTINGS.mergeWithDefaults({ language: 'ru' }).language === 'ru');
+  ok('language invalid rejected', PIE_SETTINGS.mergeWithDefaults({ language: 'klingon' }).language === 'auto');
+
   ok('backgroundAnim default aurora', PIE_SETTINGS.mergeWithDefaults(null).backgroundAnim === 'aurora');
   ok('backgroundAnim valid kept', PIE_SETTINGS.mergeWithDefaults({ backgroundAnim: 'particles' }).backgroundAnim === 'particles');
   ok('backgroundAnim off kept', PIE_SETTINGS.mergeWithDefaults({ backgroundAnim: 'none' }).backgroundAnim === 'none');

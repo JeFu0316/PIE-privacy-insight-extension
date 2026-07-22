@@ -24,6 +24,7 @@
   const DEFAULTS = Object.freeze({
     schemaVersion: SCHEMA_VERSION,
     theme: 'system',
+    language: 'auto',
     defaultTab: 'overview',
     thirdPartyNotifications: true,
     ipLookupEnabled: false,
@@ -40,7 +41,9 @@
   const VALID = {
     theme: new Set(['system', 'light', 'dark', 'catppuccin', 'dracula', 'nord', 'colorblind', 'custom']),
     defaultTab: new Set(['overview', 'cookies', 'security', 'network']),
-    backgroundAnim: new Set(['none', 'aurora', 'particles', 'shimmer'])
+    backgroundAnim: new Set(['none', 'aurora', 'particles', 'shimmer']),
+    // 'auto' follows the browser locale; codes cover current + planned catalogs.
+    language: new Set(['auto', 'en', 'zh_CN', 'zh_TW', 'ru', 'es', 'fr', 'de', 'pt_BR', 'ja', 'ko'])
   };
 
   const HEX_RE = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
@@ -59,6 +62,7 @@
     if (!raw || typeof raw !== 'object') return out;
 
     if (VALID.theme.has(raw.theme)) out.theme = raw.theme;
+    if (VALID.language.has(raw.language)) out.language = raw.language;
     if (VALID.defaultTab.has(raw.defaultTab)) out.defaultTab = raw.defaultTab;
     if (typeof raw.thirdPartyNotifications === 'boolean') {
       out.thirdPartyNotifications = raw.thirdPartyNotifications;

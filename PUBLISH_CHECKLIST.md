@@ -74,10 +74,10 @@ design choice (the Google DNS lookup) is worth removing under the new Aug 1 rule
 - ~~Remove `console.log('P.I.E background running')` from `background.js`.~~ **Done.**
 - ~~Delete the stray `err.tmp` from the folder.~~ **Done.**
 - **Package only runtime files.** Include: `manifest.json`, `background.js`,
-  `content_script.js`, `popup.html/css/js`, `settings.js`, `cookie-database.js`,
-  `tracker-domains.js`, `COOKIE_DB_LICENSE.txt`, `pie16/32/128.png`. **Exclude:**
-  `.git/`, `.claude/`, `CLAUDE.md`, `FINDINGS_PIE.md`, `README.md`, `PUBLISH_CHECKLIST.md`,
-  `prototype/`, `tests/`, `err.tmp`.
+  `content_script.js`, `popup.html/css/js`, `settings.js`, `i18n.js`,
+  `cookie-database.js`, `tracker-domains.js`, `COOKIE_DB_LICENSE.txt`,
+  `pie16/32/128.png`. **Exclude:** `.git/`, `.claude/`, `CLAUDE.md`, `FINDINGS_PIE.md`,
+  `README.md`, `PUBLISH_CHECKLIST.md`, `prototype/`, `tests/`, `dist/`, `err.tmp`.
 - ~~Icons: the manifest maps size `48` to `pie32.png` (a 32px image).~~ **Partly done:**
   the 48px slot now downscales from `pie128.png` (sharper than upscaling the 32px), a
   `32` mapping was added, and a top-level `"icons"` field now mirrors
