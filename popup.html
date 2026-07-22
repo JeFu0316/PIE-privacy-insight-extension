@@ -44,6 +44,7 @@
     <div class="body">
       <section class="panel active" id="tab-overview" role="tabpanel">
         <div class="rings" id="ov-rings"></div>
+        <div class="ov-myip" id="ov-myip" hidden></div>
         <div class="stats" id="ov-stats"></div>
         <div class="hint" id="ov-hint"></div>
       </section>
@@ -64,7 +65,7 @@
 
     <div class="foot">
       <span id="foot-status">P.I.E 2.0.2 · on-device</span>
-      <span data-i18n="foot.scoring">Two-axis scoring</span>
+      <button type="button" class="foot-link" id="foot-report" data-i18n="foot.report">Report</button>
     </div>
     </div>
 
@@ -136,6 +137,13 @@
           </label>
           <label class="set-row set-row-col">
             <span class="set-row-top">
+              <span class="set-row-text" data-i18n="settings.showMyIp">Show my public IP</span>
+              <input type="checkbox" class="toggle" id="set-myip" />
+            </span>
+            <span class="set-hint" data-i18n="settings.showMyIpHint">Asks Cloudflare for your exit IP and does a best-effort VPN/datacenter check via reverse DNS. Off by default — your IP is sent to those services when enabled.</span>
+          </label>
+          <label class="set-row set-row-col">
+            <span class="set-row-top">
               <span class="set-row-text" data-i18n="settings.netMonitoring">Network activity monitoring</span>
               <input type="checkbox" class="toggle" id="set-network" />
             </span>
@@ -168,11 +176,17 @@
           <button type="button" class="set-action" id="clean-now" data-i18n="settings.cleanNow">Clean tracker cookies now</button>
           <div class="set-action-result" id="clean-result" role="status"></div>
         </div>
+        <div class="set-section">
+          <div class="set-label" data-i18n="settings.feedback">Help &amp; feedback</div>
+          <p class="set-hint" style="margin:0 2px 10px;" data-i18n="settings.feedbackHint">Report a bug or send an idea. Opens your email app with a short template — nothing is sent automatically, and no cookies or browsing data are attached.</p>
+          <button type="button" class="set-action" id="report-btn" data-i18n="settings.reportBug">Report a bug / feedback</button>
+        </div>
         <p class="set-footnote" data-i18n="settings.footnote">Settings sync across Chrome when signed in. All cleaning happens on your device.</p>
       </div>
     </div>
 
     <script src="cookie-database.js"></script>
+    <script src="exit-ip.js"></script>
     <script src="i18n.js"></script>
     <script src="settings.js"></script>
     <script src="popup.js"></script>

@@ -28,6 +28,7 @@
     defaultTab: 'overview',
     thirdPartyNotifications: true,
     ipLookupEnabled: false,
+    myIpLookupEnabled: false,
     networkMonitoring: true,
     animations: true,
     backgroundAnim: 'aurora',
@@ -69,6 +70,9 @@
     }
     if (typeof raw.ipLookupEnabled === 'boolean') {
       out.ipLookupEnabled = raw.ipLookupEnabled;
+    }
+    if (typeof raw.myIpLookupEnabled === 'boolean') {
+      out.myIpLookupEnabled = raw.myIpLookupEnabled;
     }
     if (typeof raw.networkMonitoring === 'boolean') {
       out.networkMonitoring = raw.networkMonitoring;

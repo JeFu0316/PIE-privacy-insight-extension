@@ -52,6 +52,8 @@ const { PIE_SETTINGS } = ctx;
   ok('language valid kept (zh_CN)', PIE_SETTINGS.mergeWithDefaults({ language: 'zh_CN' }).language === 'zh_CN');
   ok('language valid kept (ru)', PIE_SETTINGS.mergeWithDefaults({ language: 'ru' }).language === 'ru');
   ok('language invalid rejected', PIE_SETTINGS.mergeWithDefaults({ language: 'klingon' }).language === 'auto');
+  ok('myIpLookupEnabled default off', PIE_SETTINGS.mergeWithDefaults(null).myIpLookupEnabled === false);
+  ok('myIpLookupEnabled can enable', PIE_SETTINGS.mergeWithDefaults({ myIpLookupEnabled: true }).myIpLookupEnabled === true);
 
   ok('backgroundAnim default aurora', PIE_SETTINGS.mergeWithDefaults(null).backgroundAnim === 'aurora');
   ok('backgroundAnim valid kept', PIE_SETTINGS.mergeWithDefaults({ backgroundAnim: 'particles' }).backgroundAnim === 'particles');

@@ -9,6 +9,7 @@ let currentIp = '';
 let currentSecure = true;
 let consentDetected = false;
 let popupSettings = null;
+let myIpInfo = null;   // { ip, loc, colo, warp, ptr, kind } when my-IP lookup is on
 const thirdPartyHits = new Set();   // third-party domains seen via network (background.js)
 
 const APP_VERSION = '2.0.2';
@@ -257,6 +258,60 @@ async function getIPAddress(hostname) {
   }
 }
 
+async function lookupPtr(ip) {
+  if (typeof PIE_EXIT_IP === 'undefined') return null;
+  const name = PIE_EXIT_IP.ptrNameForIp(ip);
+  if (!name) return null;
+  try {
+    const res = await fetch('https://dns.google/resolve?name=' + encodeURIComponent(name) + '&type=PTR');
+    const data = await res.json();
+    const ans = (data && data.Answer) || [];
+    const ptr = ans.find(a => a.type === 12);
+    return ptr && ptr.data ? String(ptr.data).replace(/\.$/, '') : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+// Optional: public exit IP via Cloudflare + best-effort VPN/datacenter hint (PTR keywords / WARP).
+async function refreshMyIp() {
+  if (!popupSettings || !popupSettings.myIpLookupEnabled) {
+    myIpInfo = null;
+    return null;
+  }
+  try {
+    const res = await fetch('https://www.cloudflare.com/cdn-cgi/trace', { cache: 'no-store' });
+    const text = await res.text();
+    const parsed = PIE_EXIT_IP.parseCloudflareTrace(text);
+    if (!parsed.ip) {
+      myIpInfo = { ip: '', kind: 'unknown', error: true };
+      return myIpInfo;
+    }
+    const ptr = await lookupPtr(parsed.ip);
+    const cls = PIE_EXIT_IP.classifyExit({ ip: parsed.ip, warp: parsed.warp, ptr: ptr });
+    myIpInfo = {
+      ip: parsed.ip,
+      loc: parsed.loc || '',
+      colo: parsed.colo || '',
+      warp: !!parsed.warp,
+      ptr: ptr || '',
+      kind: cls.kind,
+      matched: cls.matched || ''
+    };
+    return myIpInfo;
+  } catch (_) {
+    myIpInfo = { ip: '', kind: 'unknown', error: true };
+    return myIpInfo;
+  }
+}
+
+function exitKindLabel(kind) {
+  if (kind === 'warp') return tr('myip.kind.warp');
+  if (kind === 'vpn_like') return tr('myip.kind.vpn');
+  if (kind === 'residential_like') return tr('myip.kind.residential');
+  return tr('myip.kind.unknown');
+}
+
 function buildCookieUrl(cookie) {
   const scheme = cookie.secure ? 'https' : 'http';
   const host = (cookie.domain || '').replace(/^\./, '');
@@ -353,6 +408,8 @@ function renderOverview() {
   rings.appendChild(makeRing(tr('overview.trackTitle'), track.level,
     track.knownTrackers > 0 ? trn('overview.trackers', track.knownTrackers) : tr('overview.noneKnown')));
 
+  renderOverviewMyIp();
+
   const stats = document.getElementById('ov-stats');
   stats.innerHTML = '';
   stats.appendChild(statTile('p', ICO.cookie, cookieData.length, tr('stats.cookies')));
@@ -370,6 +427,60 @@ function renderOverview() {
     msg = trn('overview.hintPII', sens.count);
   }
   hint.textContent = msg;
+}
+
+function renderOverviewMyIp() {
+  const box = document.getElementById('ov-myip');
+  if (!box) return;
+  box.innerHTML = '';
+  box.hidden = false;
+
+  box.appendChild(el('div', 'ov-ip-label', tr('myip.overviewLabel')));
+
+  if (!popupSettings || !popupSettings.myIpLookupEnabled) {
+    box.appendChild(el('div', 'ov-ip-meta', tr('myip.offShort')));
+    const enable = el('button', 'ov-ip-enable', tr('myip.turnOn'));
+    enable.addEventListener('click', async () => {
+      popupSettings = await PIE_SETTINGS.save({ myIpLookupEnabled: true });
+      const elToggle = document.getElementById('set-myip');
+      if (elToggle) elToggle.checked = true;
+      await refreshMyIp();
+      renderOverview();
+      renderSecurity();
+    });
+    box.appendChild(enable);
+    return;
+  }
+
+  if (!myIpInfo || myIpInfo.error || !myIpInfo.ip) {
+    box.appendChild(el('div', 'ov-ip-value', '—'));
+    box.appendChild(el('div', 'ov-ip-meta', tr('myip.unavailable')));
+    return;
+  }
+
+  box.appendChild(el('div', 'ov-ip-value', myIpInfo.ip));
+  const bits = [exitKindLabel(myIpInfo.kind)];
+  if (myIpInfo.loc) bits.push(tr('myip.loc', { loc: myIpInfo.loc }));
+  box.appendChild(el('div', 'ov-ip-meta', bits.join(' · ')));
+}
+
+const FEEDBACK_EMAIL = 'jeffreyk348@gmail.com';
+
+function openFeedbackReport() {
+  const subject = tr('feedback.subject', { version: APP_VERSION });
+  const body = tr('feedback.body', {
+    version: APP_VERSION,
+    language: (popupSettings && popupSettings.language) || 'auto',
+    locale: (typeof PIE_I18N !== 'undefined' && PIE_I18N.getLocale()) || 'en'
+  });
+  const url = 'mailto:' + FEEDBACK_EMAIL
+    + '?subject=' + encodeURIComponent(subject)
+    + '&body=' + encodeURIComponent(body);
+  try {
+    window.open(url, '_blank');
+  } catch (_) {
+    location.href = url;
+  }
 }
 
 function cookieDetail(cookie) {
@@ -511,6 +622,36 @@ function renderSecurity() {
   stRow.appendChild(info);
   card.appendChild(stRow);
   wrap.appendChild(card);
+
+  // Your public exit IP (optional — off by default; Cloudflare + best-effort hint).
+  wrap.appendChild(el('div', 'sec-label', tr('myip.section')));
+  const myCard = el('div', 'seccard myip-card');
+  if (!popupSettings || !popupSettings.myIpLookupEnabled) {
+    myCard.appendChild(el('div', 's', tr('myip.off')));
+    const enable = el('button', 'n-enable', tr('myip.turnOn'));
+    enable.style.marginTop = '10px';
+    enable.addEventListener('click', async () => {
+      popupSettings = await PIE_SETTINGS.save({ myIpLookupEnabled: true });
+      const elToggle = document.getElementById('set-myip');
+      if (elToggle) elToggle.checked = true;
+      await refreshMyIp();
+      renderSecurity();
+    });
+    myCard.appendChild(enable);
+  } else if (!myIpInfo || myIpInfo.error || !myIpInfo.ip) {
+    myCard.appendChild(el('div', 's', tr('myip.unavailable')));
+  } else {
+    const row = el('div', 'st-row');
+    const block = el('div');
+    block.appendChild(el('div', 'h', myIpInfo.ip));
+    const bits = [exitKindLabel(myIpInfo.kind)];
+    if (myIpInfo.loc) bits.push(tr('myip.loc', { loc: myIpInfo.loc }));
+    block.appendChild(el('div', 's', bits.join(' · ')));
+    row.appendChild(block);
+    myCard.appendChild(row);
+    myCard.appendChild(el('div', 'myip-disclaimer', tr('myip.disclaimer')));
+  }
+  wrap.appendChild(myCard);
 
   wrap.appendChild(el('div', 'sec-label', tr('security.attrWarnings')));
   const warned = cookieData
@@ -702,6 +843,8 @@ async function showCookies() {
     currentIp = await getIPAddress(url.hostname);
   }
 
+  const myIpPromise = refreshMyIp();
+
   const domainVariants = [url.hostname, '.' + url.hostname];
   let all = [];
   for (const d of domainVariants) {
@@ -712,6 +855,7 @@ async function showCookies() {
   for (const c of all) map.set(`${c.name}|${c.domain}|${c.path}`, c);
   cookieData = Array.from(map.values());
 
+  await myIpPromise;
   renderAll();
 }
 
@@ -957,6 +1101,7 @@ function bindCustomEditor(initial) {
 function bindSettingsControls(settings) {
   const notifEl = document.getElementById('set-notifications');
   const ipEl = document.getElementById('set-ip');
+  const myIpEl = document.getElementById('set-myip');
   const netEl = document.getElementById('set-network');
   const animEl = document.getElementById('set-animations');
   const bannerEl = document.getElementById('set-bannerhide');
@@ -966,6 +1111,7 @@ function bindSettingsControls(settings) {
   const cleanResult = document.getElementById('clean-result');
   if (notifEl) notifEl.checked = settings.thirdPartyNotifications;
   if (ipEl) ipEl.checked = settings.ipLookupEnabled;
+  if (myIpEl) myIpEl.checked = settings.myIpLookupEnabled;
   if (netEl) netEl.checked = settings.networkMonitoring;
   if (animEl) animEl.checked = settings.animations;
   if (bannerEl) bannerEl.checked = settings.bannerAutoHide;
@@ -1005,6 +1151,15 @@ function bindSettingsControls(settings) {
         currentIp = '';
       }
       renderSiteBar();
+    });
+  }
+
+  if (myIpEl) {
+    myIpEl.addEventListener('change', async () => {
+      popupSettings = await PIE_SETTINGS.save({ myIpLookupEnabled: myIpEl.checked });
+      await refreshMyIp();
+      renderOverview();
+      renderSecurity();
     });
   }
 
@@ -1070,6 +1225,11 @@ function setupSettingsPanel() {
   const backBtn = document.getElementById('settings-back');
   if (openBtn) openBtn.addEventListener('click', openSettingsPanel);
   if (backBtn) backBtn.addEventListener('click', closeSettingsPanel);
+
+  const reportBtn = document.getElementById('report-btn');
+  const footReport = document.getElementById('foot-report');
+  if (reportBtn) reportBtn.addEventListener('click', openFeedbackReport);
+  if (footReport) footReport.addEventListener('click', openFeedbackReport);
 }
 
 document.addEventListener('DOMContentLoaded', async () => {

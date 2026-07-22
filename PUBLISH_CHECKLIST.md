@@ -20,7 +20,9 @@ design choice (the Google DNS lookup) is worth removing under the new Aug 1 rule
 - **No remotely hosted code** — no `eval`, `new Function`, `import()`, or remote
   `<script src>`. `importScripts` loads only local files. (MV3 requires all logic to
   ship in the package.) ✓
-- **One** external network call only: `https://dns.google/resolve` (see MUST-DO #5). ✓
+- **Two** optional external network calls (both off by default):
+  `https://dns.google/resolve` (site IP and optional PTR for your exit IP) and
+  `https://www.cloudflare.com/cdn-cgi/trace` (your public exit IP). See privacy policy.
 - **All declared permissions are used** (cookies, tabs, webRequest, storage,
   notifications). ✓
 - **No `web_accessible_resources`** exposed to pages. ✓
@@ -74,10 +76,11 @@ design choice (the Google DNS lookup) is worth removing under the new Aug 1 rule
 - ~~Remove `console.log('P.I.E background running')` from `background.js`.~~ **Done.**
 - ~~Delete the stray `err.tmp` from the folder.~~ **Done.**
 - **Package only runtime files.** Include: `manifest.json`, `background.js`,
-  `content_script.js`, `popup.html/css/js`, `settings.js`, `i18n.js`,
+  `content_script.js`, `popup.html/css/js`, `settings.js`, `i18n.js`, `exit-ip.js`,
   `cookie-database.js`, `tracker-domains.js`, `COOKIE_DB_LICENSE.txt`,
   `pie16/32/128.png`. **Exclude:** `.git/`, `.claude/`, `CLAUDE.md`, `FINDINGS_PIE.md`,
-  `README.md`, `PUBLISH_CHECKLIST.md`, `prototype/`, `tests/`, `dist/`, `err.tmp`.
+  `README.md`, `PUBLISH_CHECKLIST.md`, `prototype/`, `tests/`, `dist/`, `err.tmp`,
+  `_privacy-site/`.
 - ~~Icons: the manifest maps size `48` to `pie32.png` (a 32px image).~~ **Partly done:**
   the 48px slot now downscales from `pie128.png` (sharper than upscaling the 32px), a
   `32` mapping was added, and a top-level `"icons"` field now mirrors

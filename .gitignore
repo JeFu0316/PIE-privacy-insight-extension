@@ -1,2 +1,5 @@
 # Build artifacts / packaged extension
 dist/
+
+# Local clone of the separate privacy-policy Pages repo (not part of the extension)
+_privacy-site/
