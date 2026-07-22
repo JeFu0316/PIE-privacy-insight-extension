@@ -7,37 +7,38 @@
     <link rel="stylesheet" href="popup.css" />
   </head>
   <body>
+    <div class="bg-fx" id="bg-fx" aria-hidden="true"></div>
     <div class="head">
       <div class="logo" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg>
+        <img src="pie128.png" alt="" width="30" height="30" />
       </div>
       <div>
         <div class="brand-name">P.I.E</div>
-        <div class="brand-sub">Privacy Insight Extension</div>
+        <div class="brand-sub" data-i18n="app.tagline">Privacy Insight Extension</div>
       </div>
       <div class="spacer"></div>
-      <button class="theme-toggle" id="theme-btn" aria-label="Switch theme">
+      <button class="theme-toggle" id="theme-btn" data-i18n-label="header.switchTheme" aria-label="Switch theme">
         <svg id="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
         <span id="theme-label">System</span>
       </button>
-      <button class="icon-btn" id="settings-btn" aria-label="Settings" title="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+      <button class="icon-btn" id="settings-btn" data-i18n-label="header.settings" data-i18n-title="header.settings" aria-label="Settings" title="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
     </div>
 
     <div id="main-view">
     <div class="site">
       <span class="lock" id="site-lock" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
       <div style="flex:1; min-width:0;">
-        <div class="dom" id="site-domain">Scanning…</div>
+        <div class="dom" id="site-domain" data-i18n="site.scanning">Scanning…</div>
         <div class="ip" id="site-ip"></div>
       </div>
       <span class="pill" id="https-badge"></span>
     </div>
 
     <div class="tabs" role="tablist">
-      <button class="tab active" data-tab="overview" role="tab">Overview</button>
-      <button class="tab" data-tab="cookies" role="tab">Cookies</button>
-      <button class="tab" data-tab="security" role="tab">Security</button>
-      <button class="tab" data-tab="network" role="tab">Network</button>
+      <button class="tab active" data-tab="overview" role="tab" data-i18n="tabs.overview">Overview</button>
+      <button class="tab" data-tab="cookies" role="tab" data-i18n="tabs.cookies">Cookies</button>
+      <button class="tab" data-tab="security" role="tab" data-i18n="tabs.security">Security</button>
+      <button class="tab" data-tab="network" role="tab" data-i18n="tabs.network">Network</button>
     </div>
 
     <div class="body">
@@ -63,89 +64,116 @@
 
     <div class="foot">
       <span id="foot-status">P.I.E 2.0.2 · on-device</span>
-      <span>Two-axis scoring</span>
+      <span data-i18n="foot.scoring">Two-axis scoring</span>
     </div>
     </div>
 
     <div class="settings-panel" id="settings-panel" hidden>
       <div class="settings-head">
-        <button class="icon-btn" id="settings-back" aria-label="Back" title="Back">
+        <button class="icon-btn" id="settings-back" data-i18n-label="settings.back" data-i18n-title="settings.back" aria-label="Back" title="Back">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
         </button>
-        <div class="settings-title">Settings</div>
+        <div class="settings-title" data-i18n="settings.title">Settings</div>
       </div>
       <div class="settings-body">
         <div class="set-section">
-          <div class="set-label">Appearance</div>
+          <div class="set-label" data-i18n="settings.language">Language</div>
+          <select class="set-select" id="set-language" aria-label="Language"></select>
+        </div>
+        <div class="set-section">
+          <div class="set-label" data-i18n="settings.appearance">Appearance</div>
           <div class="theme-grid" id="set-theme" role="group" aria-label="Theme">
-            <button type="button" class="swatch" data-theme="system"><span class="sw-prev sw-system"><i></i><i></i><i></i></span><span class="sw-name">System</span></button>
-            <button type="button" class="swatch" data-theme="light"><span class="sw-prev sw-light"><i></i><i></i><i></i></span><span class="sw-name">Light</span></button>
-            <button type="button" class="swatch" data-theme="dark"><span class="sw-prev sw-dark"><i></i><i></i><i></i></span><span class="sw-name">Dark</span></button>
+            <button type="button" class="swatch" data-theme="system"><span class="sw-prev sw-system"><i></i><i></i><i></i></span><span class="sw-name" data-i18n="theme.system">System</span></button>
+            <button type="button" class="swatch" data-theme="light"><span class="sw-prev sw-light"><i></i><i></i><i></i></span><span class="sw-name" data-i18n="theme.light">Light</span></button>
+            <button type="button" class="swatch" data-theme="dark"><span class="sw-prev sw-dark"><i></i><i></i><i></i></span><span class="sw-name" data-i18n="theme.dark">Dark</span></button>
             <button type="button" class="swatch" data-theme="catppuccin"><span class="sw-prev sw-catppuccin"><i></i><i></i><i></i></span><span class="sw-name">Catppuccin</span></button>
             <button type="button" class="swatch" data-theme="dracula"><span class="sw-prev sw-dracula"><i></i><i></i><i></i></span><span class="sw-name">Dracula</span></button>
             <button type="button" class="swatch" data-theme="nord"><span class="sw-prev sw-nord"><i></i><i></i><i></i></span><span class="sw-name">Nord</span></button>
-            <button type="button" class="swatch" data-theme="colorblind"><span class="sw-prev sw-colorblind"><i></i><i></i><i></i></span><span class="sw-name">Colour-safe</span></button>
+            <button type="button" class="swatch" data-theme="colorblind"><span class="sw-prev sw-colorblind"><i></i><i></i><i></i></span><span class="sw-name" data-i18n="theme.colorblind">Colour-safe</span></button>
+            <button type="button" class="swatch" data-theme="custom"><span class="sw-prev sw-custom"><i></i><i></i><i></i></span><span class="sw-name" data-i18n="theme.custom">Custom</span></button>
+          </div>
+          <div class="custom-editor" id="custom-editor" hidden>
+            <div class="ce-grid">
+              <label class="ce-row"><span data-i18n="custom.background">Background</span><input type="color" id="ce-bg" data-key="bg" /></label>
+              <label class="ce-row"><span data-i18n="custom.surface">Surface</span><input type="color" id="ce-surface" data-key="surface" /></label>
+              <label class="ce-row"><span data-i18n="custom.brand">Brand</span><input type="color" id="ce-brand" data-key="brand" /></label>
+              <label class="ce-row"><span data-i18n="custom.accent">Accent</span><input type="color" id="ce-accent" data-key="accent" /></label>
+              <label class="ce-row"><span data-i18n="custom.text">Text</span><input type="color" id="ce-text" data-key="text" /></label>
+              <label class="ce-row"><span data-i18n="custom.highRisk">High risk</span><input type="color" id="ce-danger" data-key="danger" /></label>
+            </div>
+            <button type="button" class="ce-reset" id="ce-reset" data-i18n="custom.reset">Reset custom colours</button>
           </div>
           <label class="set-row" style="margin-top:8px;">
-            <span class="set-row-text">Smooth animations</span>
+            <span class="set-row-text" data-i18n="settings.smoothAnimations">Smooth animations</span>
             <input type="checkbox" class="toggle" id="set-animations" />
           </label>
+          <div class="set-row set-row-col" style="cursor:default;">
+            <span class="set-row-text" style="margin-bottom:8px;" data-i18n="settings.bgAnimation">Background animation</span>
+            <div class="seg-control" id="set-bganim" role="group" aria-label="Background animation">
+              <button type="button" class="seg-btn" data-anim="none" data-i18n="bganim.none">Off</button>
+              <button type="button" class="seg-btn" data-anim="aurora" data-i18n="bganim.aurora">Aurora</button>
+              <button type="button" class="seg-btn" data-anim="particles" data-i18n="bganim.particles">Particles</button>
+              <button type="button" class="seg-btn" data-anim="shimmer" data-i18n="bganim.shimmer">Shimmer</button>
+            </div>
+            <span class="set-hint" data-i18n="settings.bgAnimHint">Animated backdrop behind the popup. Disabled automatically when “Smooth animations” is off or your system requests reduced motion.</span>
+          </div>
         </div>
         <div class="set-section">
-          <div class="set-label">Privacy &amp; alerts</div>
+          <div class="set-label" data-i18n="settings.privacyAlerts">Privacy &amp; alerts</div>
           <label class="set-row set-row-col">
             <span class="set-row-top">
-              <span class="set-row-text">Desktop notifications</span>
+              <span class="set-row-text" data-i18n="settings.notifications">Desktop notifications</span>
               <input type="checkbox" class="toggle" id="set-notifications" />
             </span>
-            <span class="set-hint">Shows a desktop alert when a site sets third-party cookies — at most one per page. Turn this off to silence all notifications.</span>
+            <span class="set-hint" data-i18n="settings.notificationsHint">Shows a desktop alert when a site sets third-party cookies — at most one per page. Turn this off to silence all notifications.</span>
           </label>
           <label class="set-row set-row-col">
             <span class="set-row-top">
-              <span class="set-row-text">Show site IP address</span>
+              <span class="set-row-text" data-i18n="settings.showIp">Show site IP address</span>
               <input type="checkbox" class="toggle" id="set-ip" />
             </span>
-            <span class="set-hint">Looks up the hostname via Google DNS — sends the visited domain off-device.</span>
+            <span class="set-hint" data-i18n="settings.showIpHint">Looks up the hostname via Google DNS — sends the visited domain off-device.</span>
           </label>
           <label class="set-row set-row-col">
             <span class="set-row-top">
-              <span class="set-row-text">Network activity monitoring</span>
+              <span class="set-row-text" data-i18n="settings.netMonitoring">Network activity monitoring</span>
               <input type="checkbox" class="toggle" id="set-network" />
             </span>
-            <span class="set-hint">Logs the requests each page makes (metadata only, on-device) for the Network tab.</span>
+            <span class="set-hint" data-i18n="settings.netMonitoringHint">Logs the requests each page makes (metadata only, on-device) for the Network tab.</span>
           </label>
           <label class="set-row set-row-col">
             <span class="set-row-top">
-              <span class="set-row-text">Auto-hide cookie banners</span>
+              <span class="set-row-text" data-i18n="settings.bannerHide">Auto-hide cookie banners</span>
               <input type="checkbox" class="toggle" id="set-bannerhide" />
             </span>
-            <span class="set-hint">Best-effort: hides detected consent banners with CSS. It doesn't reject cookies for you, and may occasionally hide the wrong element or miss a banner. Takes effect on the next page load.</span>
+            <span class="set-hint" data-i18n="settings.bannerHideHint">Best-effort: hides detected consent banners with CSS. It doesn't reject cookies for you, and may occasionally hide the wrong element or miss a banner. Takes effect on the next page load.</span>
           </label>
         </div>
         <div class="set-section">
-          <div class="set-label">Cookies &amp; tracking</div>
+          <div class="set-label" data-i18n="settings.cookiesTracking">Cookies &amp; tracking</div>
           <label class="set-row set-row-col">
             <span class="set-row-top">
-              <span class="set-row-text">Show tracker count on icon</span>
+              <span class="set-row-text" data-i18n="settings.showBadge">Show tracker count on icon</span>
               <input type="checkbox" class="toggle" id="set-badge" />
             </span>
-            <span class="set-hint">Displays the number of known trackers a site contacts as a badge on the toolbar icon.</span>
+            <span class="set-hint" data-i18n="settings.showBadgeHint">Displays the number of known trackers a site contacts as a badge on the toolbar icon.</span>
           </label>
           <label class="set-row set-row-col">
             <span class="set-row-top">
-              <span class="set-row-text">Auto-clean tracker cookies</span>
+              <span class="set-row-text" data-i18n="settings.autoClean">Auto-clean tracker cookies</span>
               <input type="checkbox" class="toggle" id="set-autoclean" />
             </span>
-            <span class="set-hint">Automatically removes cookies from known tracker &amp; ad domains when you close tabs. First-party and login cookies are never touched.</span>
+            <span class="set-hint" data-i18n="settings.autoCleanHint">Automatically removes cookies from known tracker &amp; ad domains when you close tabs. First-party and login cookies are never touched.</span>
           </label>
-          <button type="button" class="set-action" id="clean-now">Clean tracker cookies now</button>
+          <button type="button" class="set-action" id="clean-now" data-i18n="settings.cleanNow">Clean tracker cookies now</button>
           <div class="set-action-result" id="clean-result" role="status"></div>
         </div>
-        <p class="set-footnote">Settings sync across Chrome when signed in. All cleaning happens on your device.</p>
+        <p class="set-footnote" data-i18n="settings.footnote">Settings sync across Chrome when signed in. All cleaning happens on your device.</p>
       </div>
     </div>
 
     <script src="cookie-database.js"></script>
+    <script src="i18n.js"></script>
     <script src="settings.js"></script>
     <script src="popup.js"></script>
   </body>
