@@ -36,7 +36,7 @@ design choice (the Google DNS lookup) is worth removing under the new Aug 1 rule
 ## MUST DO before publishing (blockers)
 
 1. **Post a privacy policy and link it in the dashboard.** Required because P.I.E
-   uses `cookies`, `tabs`, `webRequest`, and `<all_urls>`. It    must disclose: cookies
+   uses `cookies`, `tabs`, `webRequest`, and `<all_urls>`. It must disclose: cookies
    are read locally to detect PII and trackers; requests are observed locally; the
    optional IP lookup sends the visited hostname to Google DNS; user-submitted
    feedback reports POST topic/url/details/version/locale to Formspree
