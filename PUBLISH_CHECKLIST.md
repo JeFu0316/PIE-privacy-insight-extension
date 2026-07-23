@@ -81,7 +81,8 @@ design choice (the Google DNS lookup) is worth removing under the new Aug 1 rule
   `content_script.js`, `popup.html/css/js`, `settings.js`, `i18n.js`, `exit-ip.js`,
   `digest.js`, `reports.js`, `block-stats.js`, `clean-urls.js`, `ai-explain.js`,
   `cookie-database.js`, `tracker-domains.js`, `COOKIE_DB_LICENSE.txt`,
-  `toolingo-mark.png`, `toolingo16/32/48/128.png`. **Exclude:**
+  `toolingo-mark.png`, `toolingo16/32/48/128.png`, `toolingo*-darkui.png`,
+  `offscreen-icon-theme.html/js`. **Exclude:**
   `.git/`, `.claude/`, `CLAUDE.md`, `FINDINGS_PIE.md`, `README.md`,
   `PUBLISH_CHECKLIST.md`, `prototype/`, `tests/`, `dist/`, `err.tmp`, legacy
   `pie16/32/128.png` (optional keep). Keep the privacy-policy clone at
@@ -106,6 +107,10 @@ design choice (the Google DNS lookup) is worth removing under the new Aug 1 rule
 ## Next package: 2.1.0 Toolingo — Phases 3–6 (feature/toolingo-2.1.0-phase2)
 
 ### New permissions (Phases 3–6)
+- **`offscreen`** — watch `prefers-color-scheme` so the toolbar icon can swap
+  between dark/light glyphs (Chrome has no toolbar-color API). Justification:
+  "Detects the system color scheme to keep the toolbar icon visible on light and
+  dark browser chrome. No page content is accessed."
 - **`declarativeNetRequest`** — optional tracker blocking. Justification: "Blocks
   third-party requests to a bundled list of known tracker domains when the user
   opts in via Settings > Block known trackers. No data leaves the device."
@@ -114,6 +119,8 @@ design choice (the Google DNS lookup) is worth removing under the new Aug 1 rule
 - `clean-urls.js` — on-device tracking-param removal (Phase 3)
 - `block-stats.js` — per-tab and lifetime block counters (Phase 4)
 - `ai-explain.js` — on-device AI privacy explain wrapper (Phase 6)
+- `offscreen-icon-theme.html` / `offscreen-icon-theme.js` — color-scheme icon swap
+- `toolingo16/32/48/128-darkui.png` — white glyphs for dark toolbars
 
 ### AI disclosure requirement
 The Phase 6 AI explain feature uses **Chrome's built-in on-device LanguageModel
@@ -139,7 +146,9 @@ tiny noise to canvas reads (opt-in, off by default).
 `cookie-database.js`, `tracker-domains.js`, `block-stats.js`, `clean-urls.js`,
 `ai-explain.js`, `COOKIE_DB_LICENSE.txt`,
 `toolingo-mark.png`, `toolingo16.png`, `toolingo32.png`, `toolingo48.png`,
-`toolingo128.png`.
+`toolingo128.png`, `toolingo16-darkui.png`, `toolingo32-darkui.png`,
+`toolingo48-darkui.png`, `toolingo128-darkui.png`,
+`offscreen-icon-theme.html`, `offscreen-icon-theme.js`.
 
 ### Formspree
 Still listed in MUST DO (user-initiated feedback only, no cookies or browsing data).

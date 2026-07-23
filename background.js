@@ -11,6 +11,66 @@ async function refreshSettings() {
 // function is defined (see applyDnrRules definition below).
 const _settingsReady = refreshSettings();
 
+/* ---------- Toolbar icon: transparent glyph, swap for light/dark UI ----------
+ * Chrome has no toolbar-color API. We watch prefers-color-scheme via an
+ * offscreen document and set white ink on dark UI / dark ink on light UI.
+ * Store listing icons (manifest.icons) stay dark-on-transparent for light pages.
+ */
+const ICONS_FOR_LIGHT_UI = {
+  16: 'toolingo16.png',
+  32: 'toolingo32.png',
+  48: 'toolingo48.png',
+  128: 'toolingo128.png'
+};
+const ICONS_FOR_DARK_UI = {
+  16: 'toolingo16-darkui.png',
+  32: 'toolingo32-darkui.png',
+  48: 'toolingo48-darkui.png',
+  128: 'toolingo128-darkui.png'
+};
+
+function applyToolbarIconScheme(scheme) {
+  const dark = scheme === 'dark';
+  try {
+    chrome.action.setIcon({ path: dark ? ICONS_FOR_DARK_UI : ICONS_FOR_LIGHT_UI });
+  } catch (_) {}
+}
+
+async function ensureIconThemeOffscreen() {
+  try {
+    const contexts = await chrome.runtime.getContexts({
+      contextTypes: ['OFFSCREEN_DOCUMENT'],
+      documentUrls: [chrome.runtime.getURL('offscreen-icon-theme.html')]
+    });
+    if (contexts && contexts.length) return;
+  } catch (_) {}
+  try {
+    await chrome.offscreen.createDocument({
+      url: 'offscreen-icon-theme.html',
+      reasons: ['MATCH_MEDIA_LISTENERS'],
+      justification: 'Detect light/dark color scheme so the toolbar icon stays visible.'
+    });
+  } catch (e) {
+    // Already open, or API unavailable — keep manifest default icons.
+    const msg = String(e && e.message ? e.message : e);
+    if (msg.indexOf('Only a single offscreen') === -1 && msg.indexOf('already exists') === -1) {
+      // ignore
+    }
+  }
+}
+
+async function refreshToolbarIconFromScheme() {
+  await ensureIconThemeOffscreen();
+  try {
+    const resp = await chrome.runtime.sendMessage({ type: 'GET_COLOR_SCHEME' });
+    if (resp && resp.scheme) applyToolbarIconScheme(resp.scheme);
+  } catch (_) {}
+}
+
+_settingsReady.then(() => refreshToolbarIconFromScheme()).catch(() => {});
+chrome.runtime.onStartup.addListener(() => { refreshToolbarIconFromScheme(); });
+chrome.runtime.onInstalled.addListener(() => { refreshToolbarIconFromScheme(); });
+
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area === 'sync' && changes[PIE_SETTINGS.STORAGE_KEY]) {
     const wasOn = bgSettings.thirdPartyNotifications;
@@ -400,6 +460,10 @@ async function sweepTrackerCookies() {
 
 /* ---------- Popup messages ---------- */
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg && msg.type === 'ICON_COLOR_SCHEME' && msg.scheme) {
+    applyToolbarIconScheme(msg.scheme);
+    return;
+  }
   if (msg && msg.type === 'GET_NETWORK_LOG') {
     const tabId = msg.tabId;
     const entries = (tabId != null && netLog.has(tabId)) ? netLog.get(tabId) : [];
