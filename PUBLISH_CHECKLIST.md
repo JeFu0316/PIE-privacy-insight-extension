@@ -81,7 +81,7 @@ design choice (the Google DNS lookup) is worth removing under the new Aug 1 rule
   `content_script.js`, `popup.html/css/js`, `settings.js`, `i18n.js`, `exit-ip.js`,
   `digest.js`, `reports.js`, `block-stats.js`, `clean-urls.js`, `ai-explain.js`,
   `cookie-database.js`, `tracker-domains.js`, `COOKIE_DB_LICENSE.txt`,
-  `toolingo-mark.png`, `toolingo16/32/128.png`. **Exclude:**
+  `toolingo-mark.png`, `toolingo16/32/48/128.png`. **Exclude:**
   `.git/`, `.claude/`, `CLAUDE.md`, `FINDINGS_PIE.md`, `README.md`,
   `PUBLISH_CHECKLIST.md`, `prototype/`, `tests/`, `dist/`, `err.tmp`, legacy
   `pie16/32/128.png` (optional keep). Keep the privacy-policy clone at
@@ -138,7 +138,8 @@ tiny noise to canvas reads (opt-in, off by default).
 `settings.js`, `i18n.js`, `exit-ip.js`, `digest.js`, `reports.js`,
 `cookie-database.js`, `tracker-domains.js`, `block-stats.js`, `clean-urls.js`,
 `ai-explain.js`, `COOKIE_DB_LICENSE.txt`,
-`toolingo-mark.png`, `toolingo16.png`, `toolingo32.png`, `toolingo128.png`.
+`toolingo-mark.png`, `toolingo16.png`, `toolingo32.png`, `toolingo48.png`,
+`toolingo128.png`.
 
 ### Formspree
 Still listed in MUST DO (user-initiated feedback only, no cookies or browsing data).
