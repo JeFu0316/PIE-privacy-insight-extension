@@ -11,9 +11,6 @@
     "notifications",
     "declarativeNetRequest"
   ],
-  "declarative_net_request": {
-    "rule_resources": []
-  },
   "host_permissions": ["<all_urls>"],
   "background": {
     "service_worker": "background.js"
