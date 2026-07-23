@@ -26,6 +26,9 @@
           <button type="button" class="icon-btn" id="menu-report" data-i18n-label="header.report" data-i18n-title="header.report" aria-label="Report a problem" title="Report a problem">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
           </button>
+          <button type="button" class="icon-btn" id="menu-tc" data-i18n-label="header.tc" data-i18n-title="header.tc" aria-label="Terms & clarity" title="Terms & clarity">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+          </button>
         </div>
         <button type="button" class="icon-btn menu-btn" id="menu-btn" data-i18n-label="header.menu" data-i18n-title="header.menu" aria-label="Menu" title="Menu" aria-expanded="false" aria-controls="head-actions">
           <span class="menu-glyph" aria-hidden="true">
@@ -60,7 +63,6 @@
         <div class="ov-digest" id="ov-digest" hidden></div>
         <div class="ov-myip" id="ov-myip" hidden></div>
         <div class="stats" id="ov-stats"></div>
-        <div class="hint" id="ov-hint"></div>
       </section>
 
       <section class="panel" id="tab-cookies" role="tabpanel">
@@ -213,7 +215,42 @@
           <p class="set-hint" style="margin:0 2px 10px;" data-i18n="settings.feedbackHint">Report a bug or send an idea with the in-app form. Nothing is sent until you tap Send, and no cookies or browsing data are attached automatically.</p>
           <button type="button" class="set-action" id="report-btn" data-i18n="settings.reportBug">Report a bug / feedback</button>
         </div>
-        <p class="set-footnote" data-i18n="settings.footnote">Settings sync across Chrome when signed in. All cleaning happens on your device.</p>
+        <p class="set-footnote"><button type="button" class="foot-link" id="settings-tc-link" data-i18n="tc.openLink">Terms &amp; clarity</button></p>
+      </div>
+    </div>
+
+    <div class="tc-panel" id="tc-panel" hidden>
+      <div class="settings-head">
+        <button class="icon-btn" id="tc-back" data-i18n-label="settings.back" data-i18n-title="settings.back" aria-label="Back" title="Back">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <div class="settings-title" data-i18n="tc.title">Terms &amp; clarity</div>
+      </div>
+      <div class="tc-body">
+        <section class="tc-block">
+          <h3 data-i18n="tc.scoresTitle">How scores work</h3>
+          <p data-i18n="tc.scoresBody">Sensitivity and tracking are two independent readings — not one blended score. Real personal data is never confused with ordinary tracker IDs.</p>
+        </section>
+        <section class="tc-block">
+          <h3 data-i18n="tc.cookiesTitle">Cookies on a site</h3>
+          <p data-i18n="tc.cookiesBody">Overview messages such as “no personal data in cookies” or “this site loads known cross-site trackers” describe what Toolingo detected on the page you are viewing. They are explanations, not a single risk grade.</p>
+        </section>
+        <section class="tc-block">
+          <h3 data-i18n="tc.privacyTitle">On-device by design</h3>
+          <p data-i18n="tc.privacyBody">Cookie analysis, tracker classification, network logging, and cleaning run on your device. Toolingo does not send your cookies, browsing history, or request contents to a developer server.</p>
+        </section>
+        <section class="tc-block">
+          <h3 data-i18n="tc.networkTitle">Network tab</h3>
+          <p data-i18n="tc.networkBody">Observed on your device — metadata only. Toolingo never records request bodies or page contents, and does not upload the Network list.</p>
+        </section>
+        <section class="tc-block">
+          <h3 data-i18n="tc.settingsTitle">Settings &amp; digest</h3>
+          <p data-i18n="tc.settingsBody">Settings may sync across Chrome when you are signed in. The weekly digest stores only aggregate tracker counts and cleaned-cookie totals locally — not the first-party sites you visit.</p>
+        </section>
+        <section class="tc-block">
+          <h3 data-i18n="tc.policyTitle">Full privacy policy</h3>
+          <p><a class="tc-link" id="tc-policy-link" href="https://jefu0316.github.io/Index.html/" target="_blank" rel="noopener noreferrer" data-i18n="tc.policyLink">Open the privacy policy</a></p>
+        </section>
       </div>
     </div>
 
@@ -225,7 +262,7 @@
         <h2 class="report-title" data-i18n="report.title">Can't access something? Tell us!</h2>
         <p class="report-lead" data-i18n="report.lead">Report a problem with Toolingo or a site. We'll look into it.</p>
         <label class="report-field">
-          <span class="visually-hidden" data-i18n="report.topic">Select problem</span>
+          <span class="report-label" data-i18n="report.topic">Select problem</span>
           <select id="report-topic" class="report-input">
             <option value="bug" data-i18n="report.topicBug">Bug / something broken</option>
             <option value="site" data-i18n="report.topicSite">Site access / cookies issue</option>
@@ -234,12 +271,12 @@
           </select>
         </label>
         <label class="report-field">
-          <span class="visually-hidden" data-i18n="report.url">Website URL (optional)</span>
-          <input type="url" id="report-url" class="report-input" data-i18n-placeholder="report.urlPlaceholder" placeholder="Website URL (optional)" autocomplete="off" />
+          <span class="report-label" data-i18n="report.url">Website URL (required)</span>
+          <input type="url" id="report-url" class="report-input" data-i18n-placeholder="report.urlPlaceholder" placeholder="https://example.com" autocomplete="off" />
         </label>
         <label class="report-field">
-          <span class="visually-hidden" data-i18n="report.details">Tell us more (required)</span>
-          <textarea id="report-details" class="report-input report-textarea" rows="4" data-i18n-placeholder="report.detailsPlaceholder" placeholder="Tell us more about the problem (required)" required></textarea>
+          <span class="report-label" data-i18n="report.details">Tell us more (optional)</span>
+          <textarea id="report-details" class="report-input report-textarea" rows="3" data-i18n-placeholder="report.detailsPlaceholder" placeholder="Optional details"></textarea>
         </label>
         <div class="set-action-result" id="report-msg" role="status"></div>
         <button type="button" class="report-send" id="report-send" data-i18n="report.send">Send</button>

@@ -137,7 +137,7 @@
 
 * { box-sizing: border-box; }
 body {
-  width: 460px;
+  width: 400px;
   margin: 0;
   font-family: 'Segoe UI', Inter, Roboto, system-ui, sans-serif;
   color: var(--text);
@@ -177,7 +177,7 @@ body {
   margin-right: 0;
 }
 body.head-menu-open .head-actions {
-  max-width: 120px; opacity: 1; transform: translateX(0);
+  max-width: 150px; opacity: 1; transform: translateX(0);
   pointer-events: auto; margin-right: 2px;
 }
 .menu-btn { position: relative; }
@@ -233,7 +233,7 @@ body.head-menu-open .menu-btn { color: var(--brand); background: var(--card-2); 
 .tab:hover { background: var(--card-2); color: var(--text); }
 .tab.active { background: linear-gradient(135deg, var(--brand), var(--brand-2)); color: #fff; box-shadow: var(--shadow-sm); }
 
-.body { padding: 2px 14px 14px; max-height: 560px; overflow-y: auto; overflow-x: hidden; }
+.body { padding: 2px 14px 14px; max-height: 460px; overflow-y: auto; overflow-x: hidden; }
 .panel { display: none; }
 .panel.active { display: block; }
 .empty { text-align: center; color: var(--text-3); font-size: 12px; padding: 22px 0; }
@@ -357,7 +357,7 @@ body.head-menu-open .menu-btn { color: var(--brand); background: var(--card-2); 
 .foot-link:hover { text-decoration: underline; }
 
 /* settings panel */
-.settings-panel { display: flex; flex-direction: column; max-height: 640px; }
+.settings-panel { display: flex; flex-direction: column; max-height: 520px; }
 .settings-panel[hidden] { display: none !important; }
 body.settings-open #main-view { display: none; }
 body.settings-open .menu-btn { background: var(--card-2); color: var(--brand); }
@@ -505,7 +505,7 @@ body.settings-open .menu-btn { background: var(--card-2); color: var(--brand); }
 
 /* ---- animated background (Off / Aurora / Particles / Shimmer) ---- */
 .bg-fx { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
-.head, #main-view, .settings-panel, .report-panel { position: relative; z-index: 1; }
+.head, #main-view, .settings-panel, .tc-panel { position: relative; z-index: 1; }
 
 /* Aurora: lighter blur + opacity to reduce GPU cost (was laggy at 64px blur + scale) */
 body[data-anim="aurora"] .bg-fx::before,
@@ -553,39 +553,53 @@ body[data-anim="particles"] .bg-fx::after {
 html.reduce-motion .bg-fx { display: none; }
 @media (prefers-reduced-motion: reduce) { .bg-fx { display: none; } }
 
-/* ---- in-popup report form ---- */
+/* ---- in-popup report form (compact card + blurred underlay) ---- */
 .report-panel {
   position: absolute; inset: 0; z-index: 20;
-  background: color-mix(in srgb, var(--card) 88%, #000 12%);
-  backdrop-filter: blur(2px);
-  display: flex; align-items: stretch; justify-content: center;
-  padding: 10px;
+  display: flex; align-items: center; justify-content: center;
+  padding: 28px 22px;
+  background: color-mix(in srgb, var(--card) 42%, #000 58%);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 .report-panel[hidden] { display: none !important; }
 .report-card {
-  position: relative; width: 100%;
-  background: var(--card); border: 1px solid var(--line); border-radius: 14px;
-  padding: 16px 14px 14px; box-shadow: var(--shadow-sm);
-  display: flex; flex-direction: column; gap: 10px;
+  position: relative; width: 100%; max-width: 300px;
+  background: var(--card); border: 1px solid var(--line); border-radius: 16px;
+  padding: 14px 12px 12px; box-shadow: 0 12px 40px rgba(0,0,0,.28);
+  display: flex; flex-direction: column; gap: 8px;
 }
-.report-close { position: absolute; top: 8px; right: 8px; }
-.report-title { margin: 4px 28px 0 2px; font-size: 15px; font-weight: 700; line-height: 1.3; }
-.report-lead { margin: 0 2px; font-size: 12px; color: var(--text-2); line-height: 1.45; }
+.report-close { position: absolute; top: 6px; right: 6px; }
+.report-title { margin: 2px 26px 0 2px; font-size: 13.5px; font-weight: 700; line-height: 1.3; }
+.report-lead { margin: 0 2px; font-size: 11px; color: var(--text-2); line-height: 1.4; }
 .report-field { display: block; }
+.report-label { display: block; font-size: 10.5px; font-weight: 600; color: var(--text-3); margin: 0 2px 4px; }
 .report-input {
-  width: 100%; font-size: 12.5px; font-family: inherit; color: var(--text);
+  width: 100%; font-size: 12px; font-family: inherit; color: var(--text);
   background: var(--card-2); border: 1px solid var(--line); border-radius: 10px;
-  padding: 10px 12px;
+  padding: 8px 10px;
 }
 .report-input:focus { outline: none; border-color: var(--brand); }
-.report-textarea { resize: vertical; min-height: 96px; line-height: 1.45; }
+.report-textarea { resize: none; min-height: 64px; max-height: 72px; line-height: 1.4; }
 .report-send {
-  width: 100%; margin-top: 2px; font-size: 13px; font-weight: 600; font-family: inherit;
-  border: none; border-radius: 10px; padding: 11px 12px; cursor: pointer;
+  width: 100%; margin-top: 2px; font-size: 12.5px; font-weight: 600; font-family: inherit;
+  border: none; border-radius: 10px; padding: 10px 12px; cursor: pointer;
   background: var(--card-2); color: var(--text);
 }
 .report-send:hover { background: color-mix(in srgb, var(--brand) 18%, var(--card-2)); color: var(--brand); }
 .report-send:disabled { opacity: .55; cursor: default; }
+
+/* ---- Terms & clarity ---- */
+.tc-panel { display: flex; flex-direction: column; max-height: 520px; }
+.tc-panel[hidden] { display: none !important; }
+body.tc-open #main-view,
+body.tc-open .settings-panel { display: none; }
+.tc-body { padding: 0 14px 16px; overflow-y: auto; flex: 1; }
+.tc-block { margin-bottom: 14px; }
+.tc-block h3 { margin: 0 0 6px; font-size: 12.5px; font-weight: 700; }
+.tc-block p { margin: 0; font-size: 11.5px; color: var(--text-2); line-height: 1.5; }
+.tc-link { color: var(--brand); font-size: 12px; font-weight: 600; text-decoration: none; }
+.tc-link:hover { text-decoration: underline; }
 
 /* ---- smooth transitions (disabled by html.reduce-motion or OS reduced-motion) ---- */
 @keyframes pieFade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }

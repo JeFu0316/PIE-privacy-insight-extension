@@ -417,17 +417,6 @@ function renderOverview() {
   stats.appendChild(statTile('b', ICO.third, thirdParty, tr('stats.thirdParty')));
   stats.appendChild(statTile('a', ICO.track, track.knownTrackers, tr('stats.knownTrackers')));
   stats.appendChild(statTile('g', ICO.check, sens.count, tr('stats.withPII')));
-
-  const hint = document.getElementById('ov-hint');
-  let msg;
-  if (sens.count === 0 && track.knownTrackers === 0) {
-    msg = tr('overview.hintClean');
-  } else if (sens.count === 0) {
-    msg = tr('overview.hintTrackersOnly');
-  } else {
-    msg = trn('overview.hintPII', sens.count);
-  }
-  hint.textContent = msg;
 }
 
 function renderOverviewMyIp() {
@@ -528,6 +517,7 @@ function toggleHeadMenu() {
 
 function openReportPanel() {
   closeHeadMenu();
+  closeTcPanel();
   const panel = document.getElementById('report-panel');
   if (!panel) return;
   panel.hidden = false;
@@ -536,7 +526,8 @@ function openReportPanel() {
     urlEl.value = (currentSecure ? 'https://' : 'http://') + currentSiteHost;
   }
   const details = document.getElementById('report-details');
-  if (details) details.focus();
+  if (urlEl) urlEl.focus();
+  else if (details) details.focus();
 }
 
 function closeReportPanel() {
@@ -563,18 +554,18 @@ async function submitReportForm() {
   const msg = document.getElementById('report-msg');
   const sendBtn = document.getElementById('report-send');
   const details = (detailsEl && detailsEl.value || '').trim();
-  if (!details) {
-    if (msg) msg.textContent = tr('report.needDetails');
-    if (detailsEl) detailsEl.focus();
+  const siteUrl = (urlEl && urlEl.value || '').trim();
+  if (!siteUrl) {
+    if (msg) msg.textContent = tr('report.needUrl');
+    if (urlEl) urlEl.focus();
     return;
   }
   const topic = topicEl ? topicEl.value : 'other';
-  const siteUrl = (urlEl && urlEl.value || '').trim();
   const subject = tr('feedback.subject', { version: APP_VERSION });
   const body = tr('report.mailBody', {
     topic: topicLabel(topic),
-    url: siteUrl || '—',
-    details: details,
+    url: siteUrl,
+    details: details || '—',
     version: APP_VERSION,
     language: (popupSettings && popupSettings.language) || 'auto',
     locale: (typeof PIE_I18N !== 'undefined' && PIE_I18N.getLocale()) || 'en'
@@ -636,6 +627,7 @@ function setupHeadMenu() {
   const logoBtn = document.getElementById('logo-btn');
   const settingsBtn = document.getElementById('menu-settings');
   const reportBtn = document.getElementById('menu-report');
+  const tcBtn = document.getElementById('menu-tc');
   if (menuBtn) menuBtn.addEventListener('click', toggleHeadMenu);
   if (settingsBtn) {
     settingsBtn.addEventListener('click', () => {
@@ -644,6 +636,12 @@ function setupHeadMenu() {
     });
   }
   if (reportBtn) reportBtn.addEventListener('click', openReportPanel);
+  if (tcBtn) {
+    tcBtn.addEventListener('click', () => {
+      closeHeadMenu();
+      openTcPanel();
+    });
+  }
   if (logoBtn) {
     logoBtn.addEventListener('click', () => {
       // Future: open TOOLINGO_SITE_URL when the domain is settled.
@@ -652,6 +650,40 @@ function setupHeadMenu() {
         return;
       }
       logoBtn.title = tr('header.logoSoon');
+    });
+  }
+}
+
+function openTcPanel() {
+  closeReportPanel();
+  closeHeadMenu();
+  closeSettingsPanel();
+  document.body.classList.add('tc-open');
+  const panel = document.getElementById('tc-panel');
+  if (panel) panel.hidden = false;
+}
+
+function closeTcPanel() {
+  document.body.classList.remove('tc-open');
+  const panel = document.getElementById('tc-panel');
+  if (panel) panel.hidden = true;
+}
+
+function setupTcPanel() {
+  const back = document.getElementById('tc-back');
+  const link = document.getElementById('tc-policy-link');
+  const settingsLink = document.getElementById('settings-tc-link');
+  if (back) back.addEventListener('click', closeTcPanel);
+  if (link) {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      chrome.tabs.create({ url: link.href });
+    });
+  }
+  if (settingsLink) {
+    settingsLink.addEventListener('click', () => {
+      closeSettingsPanel();
+      openTcPanel();
     });
   }
 }
@@ -992,7 +1024,6 @@ async function renderNetwork() {
     for (const e of shown.slice(0, 150)) list.appendChild(networkRow(e));
     wrap.appendChild(list);
   }
-  wrap.appendChild(el('div', 'nprivacy', tr('net.privacy')));
 }
 
 function startNetworkPolling() {
@@ -1222,6 +1253,7 @@ function setupLanguage(settings) {
 function openSettingsPanel() {
   closeReportPanel();
   closeHeadMenu();
+  closeTcPanel();
   document.body.classList.add('settings-open');
   document.getElementById('settings-panel').hidden = false;
 }
@@ -1522,5 +1554,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupSettingsPanel();
   setupHeadMenu();
   setupReportPanel();
+  setupTcPanel();
   showCookies();
 });
