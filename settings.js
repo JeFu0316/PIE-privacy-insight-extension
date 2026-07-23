@@ -31,7 +31,7 @@
     myIpLookupEnabled: false,
     networkMonitoring: true,
     animations: true,
-    backgroundAnim: 'aurora',
+    backgroundAnim: 'particles',
     customTheme: { ...DEFAULT_CUSTOM_THEME },
     bannerAutoHide: false,
     trackerBadge: true,

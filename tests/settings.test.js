@@ -73,10 +73,10 @@ const { PIE_SETTINGS } = ctx;
   ok('weeklyDigestEnabled can disable', PIE_SETTINGS.mergeWithDefaults({ weeklyDigestEnabled: false }).weeklyDigestEnabled === false);
   ok('weeklyDigestEnabled ignores non-boolean', PIE_SETTINGS.mergeWithDefaults({ weeklyDigestEnabled: 'no' }).weeklyDigestEnabled === true);
 
-  ok('backgroundAnim default aurora', PIE_SETTINGS.mergeWithDefaults(null).backgroundAnim === 'aurora');
-  ok('backgroundAnim valid kept', PIE_SETTINGS.mergeWithDefaults({ backgroundAnim: 'particles' }).backgroundAnim === 'particles');
+  ok('backgroundAnim default particles', PIE_SETTINGS.mergeWithDefaults(null).backgroundAnim === 'particles');
+  ok('backgroundAnim valid kept', PIE_SETTINGS.mergeWithDefaults({ backgroundAnim: 'aurora' }).backgroundAnim === 'aurora');
   ok('backgroundAnim off kept', PIE_SETTINGS.mergeWithDefaults({ backgroundAnim: 'none' }).backgroundAnim === 'none');
-  ok('backgroundAnim invalid rejected', PIE_SETTINGS.mergeWithDefaults({ backgroundAnim: 'sparkle' }).backgroundAnim === 'aurora');
+  ok('backgroundAnim invalid rejected', PIE_SETTINGS.mergeWithDefaults({ backgroundAnim: 'sparkle' }).backgroundAnim === 'particles');
 
   ok('customTheme default has 6 hex keys', (() => { const c = PIE_SETTINGS.mergeWithDefaults(null).customTheme; return PIE_SETTINGS.CUSTOM_THEME_KEYS.every((k) => /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(c[k])); })());
   ok('customTheme keeps valid hex overrides', (() => { const c = PIE_SETTINGS.mergeWithDefaults({ customTheme: { brand: '#123abc', bg: '#000' } }).customTheme; return c.brand === '#123abc' && c.bg === '#000'; })());

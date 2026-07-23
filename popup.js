@@ -502,21 +502,178 @@ async function renderOverviewDigest() {
 }
 
 const FEEDBACK_EMAIL = 'jeffreyk348@gmail.com';
+// Future: official Toolingo site. Leave null until the domain is settled.
+const TOOLINGO_SITE_URL = null;
 
-function openFeedbackReport() {
+function closeHeadMenu() {
+  const actions = document.getElementById('head-actions');
+  const menuBtn = document.getElementById('menu-btn');
+  const openIcon = menuBtn && menuBtn.querySelector('.menu-icon-open');
+  const closeIcon = menuBtn && menuBtn.querySelector('.menu-icon-close');
+  document.body.classList.remove('head-menu-open');
+  if (actions) actions.hidden = true;
+  if (menuBtn) menuBtn.setAttribute('aria-expanded', 'false');
+  if (openIcon) openIcon.hidden = false;
+  if (closeIcon) closeIcon.hidden = true;
+}
+
+function openHeadMenu() {
+  const actions = document.getElementById('head-actions');
+  const menuBtn = document.getElementById('menu-btn');
+  const openIcon = menuBtn && menuBtn.querySelector('.menu-icon-open');
+  const closeIcon = menuBtn && menuBtn.querySelector('.menu-icon-close');
+  document.body.classList.add('head-menu-open');
+  if (actions) actions.hidden = false;
+  if (menuBtn) menuBtn.setAttribute('aria-expanded', 'true');
+  if (openIcon) openIcon.hidden = true;
+  if (closeIcon) closeIcon.hidden = false;
+}
+
+function toggleHeadMenu() {
+  if (document.body.classList.contains('head-menu-open')) closeHeadMenu();
+  else openHeadMenu();
+}
+
+function openReportPanel() {
+  closeHeadMenu();
+  const panel = document.getElementById('report-panel');
+  if (!panel) return;
+  panel.hidden = false;
+  const urlEl = document.getElementById('report-url');
+  if (urlEl && !urlEl.value && currentSiteHost) {
+    urlEl.value = (currentSecure ? 'https://' : 'http://') + currentSiteHost;
+  }
+  const details = document.getElementById('report-details');
+  if (details) details.focus();
+}
+
+function closeReportPanel() {
+  const panel = document.getElementById('report-panel');
+  if (panel) panel.hidden = true;
+  const msg = document.getElementById('report-msg');
+  if (msg) msg.textContent = '';
+}
+
+function topicLabel(value) {
+  const map = {
+    bug: tr('report.topicBug'),
+    site: tr('report.topicSite'),
+    idea: tr('report.topicIdea'),
+    other: tr('report.topicOther')
+  };
+  return map[value] || value;
+}
+
+async function submitReportForm() {
+  const topicEl = document.getElementById('report-topic');
+  const urlEl = document.getElementById('report-url');
+  const detailsEl = document.getElementById('report-details');
+  const msg = document.getElementById('report-msg');
+  const sendBtn = document.getElementById('report-send');
+  const details = (detailsEl && detailsEl.value || '').trim();
+  if (!details) {
+    if (msg) msg.textContent = tr('report.needDetails');
+    if (detailsEl) detailsEl.focus();
+    return;
+  }
+  const topic = topicEl ? topicEl.value : 'other';
+  const siteUrl = (urlEl && urlEl.value || '').trim();
   const subject = tr('feedback.subject', { version: APP_VERSION });
-  const body = tr('feedback.body', {
+  const body = tr('report.mailBody', {
+    topic: topicLabel(topic),
+    url: siteUrl || '—',
+    details: details,
     version: APP_VERSION,
     language: (popupSettings && popupSettings.language) || 'auto',
     locale: (typeof PIE_I18N !== 'undefined' && PIE_I18N.getLocale()) || 'en'
   });
-  const url = 'mailto:' + FEEDBACK_EMAIL
+
+  // Prefer Gmail compose (reliable in extension popups). Mailto as secondary.
+  // Future: POST to a Toolingo backend / Formspree (needs explicit network approval).
+  const gmail = 'https://mail.google.com/mail/?view=cm&fs=1'
+    + '&to=' + encodeURIComponent(FEEDBACK_EMAIL)
+    + '&su=' + encodeURIComponent(subject)
+    + '&body=' + encodeURIComponent(body);
+  const mailto = 'mailto:' + FEEDBACK_EMAIL
     + '?subject=' + encodeURIComponent(subject)
     + '&body=' + encodeURIComponent(body);
+
+  if (sendBtn) sendBtn.disabled = true;
+  if (msg) msg.textContent = tr('report.sending');
   try {
-    window.open(url, '_blank');
+    if (chrome && chrome.tabs && chrome.tabs.create) {
+      await chrome.tabs.create({ url: gmail });
+    } else {
+      window.open(gmail, '_blank');
+    }
+    if (msg) msg.textContent = tr('report.sentHint');
+    setTimeout(() => {
+      closeReportPanel();
+      if (detailsEl) detailsEl.value = '';
+      if (sendBtn) sendBtn.disabled = false;
+    }, 700);
   } catch (_) {
-    location.href = url;
+    try {
+      await navigator.clipboard.writeText(subject + '\n\n' + body);
+      if (msg) msg.textContent = tr('report.copiedFallback', { email: FEEDBACK_EMAIL });
+    } catch (e2) {
+      try { window.open(mailto, '_blank'); } catch (e3) {}
+      if (msg) msg.textContent = tr('report.mailFallback');
+    }
+    if (sendBtn) sendBtn.disabled = false;
+  }
+}
+
+function openFeedbackReport() {
+  openReportPanel();
+}
+
+function setupTheme(initialTheme) {
+  const btn = document.getElementById('menu-theme');
+  let themeIdx = Math.max(0, THEME_ORDER.indexOf(initialTheme));
+  applyTheme(THEME_ORDER[themeIdx]);
+  syncThemeControls(THEME_ORDER[themeIdx]);
+  if (btn) btn.addEventListener('click', () => {
+    themeIdx = (themeIdx + 1) % THEME_ORDER.length;
+    setTheme(THEME_ORDER[themeIdx]).then(() => { themeIdx = THEME_ORDER.indexOf(popupSettings.theme); });
+  });
+}
+
+function setupHeadMenu() {
+  const menuBtn = document.getElementById('menu-btn');
+  const logoBtn = document.getElementById('logo-btn');
+  const settingsBtn = document.getElementById('menu-settings');
+  const reportBtn = document.getElementById('menu-report');
+  if (menuBtn) menuBtn.addEventListener('click', toggleHeadMenu);
+  if (settingsBtn) {
+    settingsBtn.addEventListener('click', () => {
+      closeHeadMenu();
+      openSettingsPanel();
+    });
+  }
+  if (reportBtn) reportBtn.addEventListener('click', openReportPanel);
+  if (logoBtn) {
+    logoBtn.addEventListener('click', () => {
+      // Future: open TOOLINGO_SITE_URL when the domain is settled.
+      if (TOOLINGO_SITE_URL) {
+        chrome.tabs.create({ url: TOOLINGO_SITE_URL });
+        return;
+      }
+      logoBtn.title = tr('header.logoSoon');
+    });
+  }
+}
+
+function setupReportPanel() {
+  const closeBtn = document.getElementById('report-close');
+  const sendBtn = document.getElementById('report-send');
+  const panel = document.getElementById('report-panel');
+  if (closeBtn) closeBtn.addEventListener('click', closeReportPanel);
+  if (sendBtn) sendBtn.addEventListener('click', submitReportForm);
+  if (panel) {
+    panel.addEventListener('click', (e) => {
+      if (e.target === panel) closeReportPanel();
+    });
   }
 }
 
@@ -1005,17 +1162,6 @@ async function setTheme(theme) {
   popupSettings = await PIE_SETTINGS.save({ theme });
 }
 
-function setupTheme(initialTheme) {
-  const btn = document.getElementById('theme-btn');
-  let themeIdx = Math.max(0, THEME_ORDER.indexOf(initialTheme));
-  applyTheme(THEME_ORDER[themeIdx]);
-  syncThemeControls(THEME_ORDER[themeIdx]);
-  if (btn) btn.addEventListener('click', () => {
-    themeIdx = (themeIdx + 1) % THEME_ORDER.length;
-    setTheme(THEME_ORDER[themeIdx]).then(() => { themeIdx = THEME_ORDER.indexOf(popupSettings.theme); });
-  });
-}
-
 function prefersReducedMotion() {
   return typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
@@ -1025,7 +1171,7 @@ function prefersReducedMotion() {
 function applyBackgroundFx() {
   const s = popupSettings || {};
   const on = s.animations !== false && !prefersReducedMotion();
-  document.body.dataset.anim = on ? (s.backgroundAnim || 'none') : 'none';
+  document.body.dataset.anim = on ? (s.backgroundAnim || 'particles') : 'none';
 }
 
 function applyMotion(enabled) {
@@ -1082,6 +1228,8 @@ function setupLanguage(settings) {
 }
 
 function openSettingsPanel() {
+  closeReportPanel();
+  closeHeadMenu();
   document.body.classList.add('settings-open');
   document.getElementById('settings-panel').hidden = false;
 }
@@ -1093,7 +1241,7 @@ function closeSettingsPanel() {
 
 function syncBgAnimControls(anim) {
   document.querySelectorAll('#set-bganim [data-anim]').forEach((btn) => {
-    btn.classList.toggle('active', btn.dataset.anim === (anim || 'aurora'));
+    btn.classList.toggle('active', btn.dataset.anim === (anim || 'particles'));
   });
 }
 
@@ -1359,15 +1507,13 @@ function bindSettingsControls(settings) {
 }
 
 function setupSettingsPanel() {
-  const openBtn = document.getElementById('settings-btn');
   const backBtn = document.getElementById('settings-back');
-  if (openBtn) openBtn.addEventListener('click', openSettingsPanel);
   if (backBtn) backBtn.addEventListener('click', closeSettingsPanel);
 
   const reportBtn = document.getElementById('report-btn');
   const footReport = document.getElementById('foot-report');
-  if (reportBtn) reportBtn.addEventListener('click', openFeedbackReport);
-  if (footReport) footReport.addEventListener('click', openFeedbackReport);
+  if (reportBtn) reportBtn.addEventListener('click', openReportPanel);
+  if (footReport) footReport.addEventListener('click', openReportPanel);
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -1382,5 +1528,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupLanguage(popupSettings);
   bindSettingsControls(popupSettings);
   setupSettingsPanel();
+  setupHeadMenu();
+  setupReportPanel();
   showCookies();
 });
