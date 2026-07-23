@@ -81,6 +81,8 @@ const { PIE_SETTINGS } = ctx;
   ok('fingerprintShield can enable', PIE_SETTINGS.mergeWithDefaults({ fingerprintShield: true }).fingerprintShield === true);
   ok('aiExplainEnabled default off', PIE_SETTINGS.mergeWithDefaults(null).aiExplainEnabled === false);
   ok('aiExplainEnabled can enable', PIE_SETTINGS.mergeWithDefaults({ aiExplainEnabled: true }).aiExplainEnabled === true);
+  ok('betaFeatures default off', PIE_SETTINGS.mergeWithDefaults(null).betaFeatures === false);
+  ok('betaFeatures can enable', PIE_SETTINGS.mergeWithDefaults({ betaFeatures: true }).betaFeatures === true);
 
   ok('backgroundAnim default particles', PIE_SETTINGS.mergeWithDefaults(null).backgroundAnim === 'particles');
   ok('backgroundAnim valid kept', PIE_SETTINGS.mergeWithDefaults({ backgroundAnim: 'aurora' }).backgroundAnim === 'aurora');

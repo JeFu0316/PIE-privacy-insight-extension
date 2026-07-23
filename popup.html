@@ -241,13 +241,25 @@
             </span>
             <span class="set-hint" data-i18n="settings.fingerprintShieldHint">Adds tiny noise to canvas reads to degrade fingerprinting accuracy. Best-effort: may not work on all sites and may cause visual glitches.</span>
           </label>
+        </div>
+        <div class="set-section" id="set-section-beta">
+          <div class="set-label" data-i18n="settings.beta">Beta features</div>
           <label class="set-row set-row-col">
             <span class="set-row-top">
-              <span class="set-row-text" data-i18n="settings.aiExplain">AI privacy explain (on-device)</span>
-              <input type="checkbox" class="toggle" id="set-aiexplain" />
+              <span class="set-row-text" data-i18n="settings.betaEnable">Enable beta features</span>
+              <input type="checkbox" class="toggle" id="set-beta" />
             </span>
-            <span class="set-hint" data-i18n="settings.aiExplainHint">Uses Chrome's built-in on-device AI to explain this site's privacy posture. Nothing is uploaded — analysis stays on your device.</span>
+            <span class="set-hint" data-i18n="settings.betaHint">Shows early or device-limited tools that may not work on every Chrome install. Off by default.</span>
           </label>
+          <div id="set-beta-items" hidden>
+            <label class="set-row set-row-col" style="margin-top:8px;">
+              <span class="set-row-top">
+                <span class="set-row-text" data-i18n="settings.aiExplain">AI privacy explain (on-device)</span>
+                <input type="checkbox" class="toggle" id="set-aiexplain" />
+              </span>
+              <span class="set-hint" data-i18n="settings.aiExplainHint">Uses Chrome's built-in on-device AI to explain this site's privacy posture. Nothing is uploaded — analysis stays on your device. Requires a capable desktop Chrome with the on-device model.</span>
+            </label>
+          </div>
         </div>
         <div class="set-section">
           <div class="set-label" data-i18n="settings.feedback">Help &amp; feedback</div>

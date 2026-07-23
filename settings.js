@@ -45,8 +45,10 @@
     // Phase 5: Fingerprint detection + shield
     fingerprintDetect: true,
     fingerprintShield: false,
-    // Phase 6: On-device AI explain
-    aiExplainEnabled: false
+    // Phase 6: On-device AI explain (gated behind betaFeatures)
+    aiExplainEnabled: false,
+    // Unstable / early features — hidden until the user enables Beta features
+    betaFeatures: false
   });
 
   const VALID = {
@@ -185,6 +187,9 @@
     }
     if (typeof raw.aiExplainEnabled === 'boolean') {
       out.aiExplainEnabled = raw.aiExplainEnabled;
+    }
+    if (typeof raw.betaFeatures === 'boolean') {
+      out.betaFeatures = raw.betaFeatures;
     }
 
     out.schemaVersion = SCHEMA_VERSION;

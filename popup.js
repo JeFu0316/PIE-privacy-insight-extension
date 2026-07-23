@@ -561,10 +561,22 @@ function renderOverviewFp() {
   box.appendChild(card);
 }
 
+function betaFeaturesOn() {
+  return !!(popupSettings && popupSettings.betaFeatures);
+}
+
 function renderOverviewAi() {
   const box = document.getElementById('ov-ai');
+  const explainBox = document.getElementById('ov-explain');
   if (!box) return;
   box.innerHTML = '';
+
+  // Beta-gated: hide completely unless Beta features is enabled.
+  if (!betaFeaturesOn()) {
+    box.hidden = true;
+    if (explainBox) { explainBox.hidden = true; explainBox.innerHTML = ''; }
+    return;
+  }
 
   const enabled = !!(popupSettings && popupSettings.aiExplainEnabled);
   const card = featCard(tr('overview.aiTitle'));
@@ -574,7 +586,6 @@ function renderOverviewAi() {
     checked: enabled,
     onChange: async (on) => {
       await saveFeatureSetting({ aiExplainEnabled: on });
-      const explainBox = document.getElementById('ov-explain');
       if (!on && explainBox) { explainBox.hidden = true; explainBox.innerHTML = ''; }
       renderOverviewAi();
     }
@@ -595,6 +606,10 @@ function renderOverviewAi() {
 async function runAiExplain() {
   const explainBox = document.getElementById('ov-explain');
   if (!explainBox) return;
+  if (!betaFeaturesOn() || !(popupSettings && popupSettings.aiExplainEnabled)) {
+    explainBox.hidden = true;
+    return;
+  }
   if (typeof PIE_AI_EXPLAIN === 'undefined') {
     explainBox.hidden = false;
     explainBox.textContent = tr('overview.aiUnavailable');
@@ -1118,6 +1133,11 @@ function syncSettingsCheckbox(id, checked) {
   if (node) node.checked = !!checked;
 }
 
+function updateBetaItemsVisibility(on) {
+  const items = document.getElementById('set-beta-items');
+  if (items) items.hidden = !on;
+}
+
 /** Save a settings partial and keep Settings-panel checkboxes in sync. */
 async function saveFeatureSetting(partial) {
   popupSettings = await PIE_SETTINGS.save(partial);
@@ -1134,6 +1154,10 @@ async function saveFeatureSetting(partial) {
   }
   if (Object.prototype.hasOwnProperty.call(partial, 'aiExplainEnabled')) {
     syncSettingsCheckbox('set-aiexplain', partial.aiExplainEnabled);
+  }
+  if (Object.prototype.hasOwnProperty.call(partial, 'betaFeatures')) {
+    syncSettingsCheckbox('set-beta', partial.betaFeatures);
+    updateBetaItemsVisibility(partial.betaFeatures);
   }
   if (Object.prototype.hasOwnProperty.call(partial, 'autoClean')) {
     syncSettingsCheckbox('set-autoclean', partial.autoClean);
@@ -1871,6 +1895,7 @@ function bindSettingsControls(settings) {
   const fpDetectEl = document.getElementById('set-fpdetect');
   const fpShieldEl = document.getElementById('set-fpshield');
   const aiExplainEl = document.getElementById('set-aiexplain');
+  const betaEl = document.getElementById('set-beta');
   const cleanNowBtn = document.getElementById('clean-now');
   const cleanResult = document.getElementById('clean-result');
   const allowlistInput = document.getElementById('allowlist-input');
@@ -1890,7 +1915,9 @@ function bindSettingsControls(settings) {
   if (trackerBlockEl) trackerBlockEl.checked = settings.trackerBlock === true;
   if (fpDetectEl) fpDetectEl.checked = settings.fingerprintDetect !== false;
   if (fpShieldEl) fpShieldEl.checked = settings.fingerprintShield === true;
+  if (betaEl) betaEl.checked = settings.betaFeatures === true;
   if (aiExplainEl) aiExplainEl.checked = settings.aiExplainEnabled === true;
+  updateBetaItemsVisibility(settings.betaFeatures === true);
   applyCustomVars(settings.customTheme);
   syncThemeControls(settings.theme);
   syncBgAnimControls(settings.backgroundAnim);
@@ -2073,6 +2100,21 @@ function bindSettingsControls(settings) {
   if (aiExplainEl) {
     aiExplainEl.addEventListener('change', async () => {
       await saveFeatureSetting({ aiExplainEnabled: aiExplainEl.checked });
+      renderOverviewAi();
+    });
+  }
+
+  if (betaEl) {
+    betaEl.addEventListener('change', async () => {
+      const on = betaEl.checked;
+      if (on) {
+        await saveFeatureSetting({ betaFeatures: true });
+      } else {
+        // Hide beta tools and turn them off so they don't linger silently.
+        await saveFeatureSetting({ betaFeatures: false, aiExplainEnabled: false });
+        if (aiExplainEl) aiExplainEl.checked = false;
+      }
+      updateBetaItemsVisibility(on);
       renderOverviewAi();
     });
   }

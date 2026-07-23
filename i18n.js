@@ -291,7 +291,10 @@
       'security.fpTitle': "Fingerprinting",
       'cleanUrls.section': "Clean URL",
       'cleanUrls.none': "No tracking parameters on this URL",
-      'overview.aiTitle': "Privacy explain"
+      'overview.aiTitle': "Privacy explain",
+      'settings.beta': "Beta features",
+      'settings.betaEnable': "Enable beta features",
+      'settings.betaHint': "Shows early or device-limited tools that may not work on every Chrome install. Off by default."
     },
 
     zh_CN: {
@@ -559,7 +562,10 @@
       'security.fpTitle': "指纹识别",
       'cleanUrls.section': "清理 URL",
       'cleanUrls.none': "此 URL 没有追踪参数",
-      'overview.aiTitle': "隐私解释"
+      'overview.aiTitle': "隐私解释",
+      'settings.beta': "测试功能",
+      'settings.betaEnable': "启用测试功能",
+      'settings.betaHint': "显示尚不稳定或受设备限制的功能，可能无法在所有 Chrome 上使用。默认关闭。"
     },
 
     zh_TW: {
@@ -827,7 +833,10 @@
       'security.fpTitle': "指紋識別",
       'cleanUrls.section': "清理 URL",
       'cleanUrls.none': "此 URL 沒有追蹤參數",
-      'overview.aiTitle': "隱私說明"
+      'overview.aiTitle': "隱私說明",
+      'settings.beta': "測試功能",
+      'settings.betaEnable': "啟用測試功能",
+      'settings.betaHint': "顯示尚不穩定或受裝置限制的功能，可能無法在所有 Chrome 上使用。預設關閉。"
     },
 
     ru: {
@@ -1094,7 +1103,10 @@
       'security.fpTitle': "Fingerprinting",
       'cleanUrls.section': "Clean URL",
       'cleanUrls.none': "No tracking parameters on this URL",
-      'overview.aiTitle': "Privacy explain"
+      'overview.aiTitle': "Privacy explain",
+      'settings.beta': "Beta features",
+      'settings.betaEnable': "Enable beta features",
+      'settings.betaHint': "Shows early or device-limited tools that may not work on every Chrome install. Off by default."
     },
 
     es: {
@@ -1361,7 +1373,10 @@
       'security.fpTitle': "Fingerprinting",
       'cleanUrls.section': "Clean URL",
       'cleanUrls.none': "No tracking parameters on this URL",
-      'overview.aiTitle': "Privacy explain"
+      'overview.aiTitle': "Privacy explain",
+      'settings.beta': "Beta features",
+      'settings.betaEnable': "Enable beta features",
+      'settings.betaHint': "Shows early or device-limited tools that may not work on every Chrome install. Off by default."
     },
 
     fr: {
@@ -1628,7 +1643,10 @@
       'security.fpTitle': "Fingerprinting",
       'cleanUrls.section': "Clean URL",
       'cleanUrls.none': "No tracking parameters on this URL",
-      'overview.aiTitle': "Privacy explain"
+      'overview.aiTitle': "Privacy explain",
+      'settings.beta': "Beta features",
+      'settings.betaEnable': "Enable beta features",
+      'settings.betaHint': "Shows early or device-limited tools that may not work on every Chrome install. Off by default."
     },
 
     de: {
@@ -1895,7 +1913,10 @@
       'security.fpTitle': "Fingerprinting",
       'cleanUrls.section': "Clean URL",
       'cleanUrls.none': "No tracking parameters on this URL",
-      'overview.aiTitle': "Privacy explain"
+      'overview.aiTitle': "Privacy explain",
+      'settings.beta': "Beta features",
+      'settings.betaEnable': "Enable beta features",
+      'settings.betaHint': "Shows early or device-limited tools that may not work on every Chrome install. Off by default."
     },
 
     pt_BR: {
@@ -2162,7 +2183,10 @@
       'security.fpTitle': "Fingerprinting",
       'cleanUrls.section': "Clean URL",
       'cleanUrls.none': "No tracking parameters on this URL",
-      'overview.aiTitle': "Privacy explain"
+      'overview.aiTitle': "Privacy explain",
+      'settings.beta': "Beta features",
+      'settings.betaEnable': "Enable beta features",
+      'settings.betaHint': "Shows early or device-limited tools that may not work on every Chrome install. Off by default."
     },
 
     ja: {
@@ -2429,7 +2453,10 @@
       'security.fpTitle': "Fingerprinting",
       'cleanUrls.section': "Clean URL",
       'cleanUrls.none': "No tracking parameters on this URL",
-      'overview.aiTitle': "Privacy explain"
+      'overview.aiTitle': "Privacy explain",
+      'settings.beta': "Beta features",
+      'settings.betaEnable': "Enable beta features",
+      'settings.betaHint': "Shows early or device-limited tools that may not work on every Chrome install. Off by default."
     },
 
     ko: {
@@ -2696,7 +2723,10 @@
       'security.fpTitle': "Fingerprinting",
       'cleanUrls.section': "Clean URL",
       'cleanUrls.none': "No tracking parameters on this URL",
-      'overview.aiTitle': "Privacy explain"
+      'overview.aiTitle': "Privacy explain",
+      'settings.beta': "Beta features",
+      'settings.betaEnable': "Enable beta features",
+      'settings.betaHint': "Shows early or device-limited tools that may not work on every Chrome install. Off by default."
     }
   };
 
