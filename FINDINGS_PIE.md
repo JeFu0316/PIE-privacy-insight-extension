@@ -212,7 +212,7 @@ third-party tracking, and connection security. No “all-in-one tools suite” s
 Still purpose-aligned; build one-by-one with an explicit go each time:
 - **Allowlist UI** for Auto-Clean (`autoCleanAllowlist`) — **DONE (Phase 2a)**
 - **Weekly privacy digest** (on-device summary; no external upload) — **DONE (Phase 2b)**
-- **Phases 3–6** scheduled below (Clean URLs → DNR + stats → fingerprint → on-device AI Explain)
+- **Phases 3–6** — **IMPLEMENTED** (Clean URLs, DNR + stats, fingerprint, on-device AI Explain); store package still needs an explicit ship go
 - Out of scope as *core* Toolingo product: full ad-block suite, password manager, malware AV, VPN (password vault = separate extension if ever)
 
 ### Phase 2a — Auto-Clean allowlist UI — DONE
@@ -226,65 +226,57 @@ contact counts, top known-tracker base domains, cookies cleaned by Auto-Clean /
 Clean now. Shown on Overview when `weeklyDigestEnabled` (default on). No first-party
 browsing hosts stored; no `alarms` permission (week rolls on read/write); nothing uploaded.
 
-### Phase 3+ scheduled roadmap (approved)
+### Phase 3+ roadmap — **IMPLEMENTED** (code on `feature/toolingo-2.1.0-phase2`)
 
 Product stance: Toolingo stays **Privacy Insight** (+ protect). AI is **“Explain
 (on-device)”**, not an “AI extension.” Vault remains a separate app (out of band).
 
-| Phase | Feature | Notes |
+| Phase | Feature | Status |
 |-------|---------|--------|
-| **3** | Clean URLs (manual first) | Opt-in “Clean this URL” in popup; bundled local rules; no auto-redirect yet |
-| **4** | Narrow tracker DNR + stats | `declarativeNetRequest` for known trackers only; page + lifetime block stats |
-| **5** | Fingerprint detect → light shield | Detect/report first; optional canvas noise **off by default** |
-| **6** | On-device AI Privacy Explain | Chrome built-in Prompt/Summarizer; narrate local findings; graceful fallback |
+| **3** | Clean URLs (manual) | **DONE** — `clean-urls.js` + Overview button; no auto-DNR rewrite yet |
+| **4** | Narrow tracker DNR + stats | **DONE** — opt-in `trackerBlock` + `block-stats.js` + Overview tiles |
+| **5** | Fingerprint detect → light shield | **DONE** — detect default on; canvas noise shield off by default |
+| **6** | On-device AI Privacy Explain | **DONE** — `ai-explain.js`; Settings off by default; graceful fallback |
 | — | Toolingo Vault | Separate extension later — not on 2.x critical path |
 
-Each phase still needs a packaging/review checkpoint before the next store ship.
-DNR (Phase 4) adds a manifest permission — disclose in CWS + privacy policy.
+Store packaging still needs an explicit go before shipping (new `declarativeNetRequest`
+permission + privacy/CWS copy). See [PUBLISH_CHECKLIST.md](PUBLISH_CHECKLIST.md).
 
 ---
 
 ## Idea backlog (inspired by other extensions)
 
-Captured ideas + scheduled status. Chrome Web Store **single-purpose** rule still
-applies: Toolingo is Privacy Insight (cookies / tracking / connection security).
+Captured ideas + status. Chrome Web Store **single-purpose** rule still applies.
 
-### A. Clean URLs — strip tracking params — **SCHEDULED (Phase 3)**
+### A. Clean URLs — strip tracking params — **DONE (Phase 3)**
 **Inspired by:** ClearURLs (Firefox).  
-Manual “Clean this URL” first; automatic DNR `queryTransform` only after manual
-proves safe (may share Phase 4 permission). Bundled local rules only.
+Manual “Clean this URL” shipped. Automatic DNR `queryTransform` still deferred.
 
 ### B. Password / passkey vault + click-to-autofill — **OUT OF BAND**
 **Inspired by:** Bitwarden. Keep **out of Toolingo core**; separate “Toolingo Vault”
-extension if ever. Near-term: do not schedule.
+extension if ever.
 
-### C. Anti-fingerprinting (JS API hardening) — **SCHEDULED (Phase 5)**
+### C. Anti-fingerprinting (JS API hardening) — **DONE (Phase 5)**
 **Inspired by:** CanvasBlocker (Firefox).  
-Toolingo did not alter canvas/Audio/WebGL before this phase. Plan: (1) detect/report,
-(2) optional light canvas-noise shield off by default — never full CanvasBlocker
-parity in v1.
+Detect/report canvas+audio counts; optional light canvas-noise shield off by default.
+Not full CanvasBlocker parity.
 
-### D. Efficient wide-spectrum content / tracker blocker + stats — **SCHEDULED (Phase 4, narrowed)**
-**Inspired by:** uBlock-class blockers.  
-Ship **narrow known-tracker DNR** (not full cosmetic ad-block) + Overview counters
-(blocked this page, domains connected, blocked since install).
+### D. Narrow tracker blocker + stats — **DONE (Phase 4)**
+**Inspired by:** uBlock-class blockers (narrowed).  
+Known-tracker DNR only + Overview page/lifetime/connected stats.
 
-### E. On-device AI Privacy Explain — **SCHEDULED (Phase 6)**
-**Inspired by:** Chrome built-in AI (Prompt / Summarizer / Translator).  
-**Honest fit:** Not required for core value; good as progressive enhancement **only**
-if on-device (no cloud LLM uploading cookies/URLs). Narrate Sensitivity/Tracking,
-suggest actions, optional digest-in-words. Non-goals: free-form page chat, Writer API,
-cloud fallback. Default `aiExplainEnabled` **off** until download UX is solid.
-Graceful fallback when `LanguageModel.availability()` is `unavailable`.
+### E. On-device AI Privacy Explain — **DONE (Phase 6)**
+**Inspired by:** Chrome built-in AI (Prompt API).  
+On-device only; structured findings (no cookie values); `aiExplainEnabled` default off.
 
-### Priority order (locked)
-1. Clean URLs (manual → optional auto later)
-2. Tracker DNR + page/lifetime stats
-3. Fingerprint detect → light opt-in shield
-4. On-device AI Explain
+### Priority order (historical)
+1. Clean URLs — done
+2. Tracker DNR + stats — done
+3. Fingerprint detect → light shield — done
+4. On-device AI Explain — done
 5. Password vault — separate product
 
 ### Open decisions (store ships)
-- Insight-first vs insight+protect copy for CWS when DNR ships
-- Confirm each phase go before version bump / permission change in the published package
+- Insight-first vs insight+protect copy for CWS when packaging DNR
+- Explicit go before bumping the published store version with the new permission
 

@@ -44,8 +44,6 @@
     'obOrigUrl',
     // Taboola
     'tblci',
-    // Generic ref / source hints
-    'ref', 'referrer', 'source', 'affiliate', 'affiliate_id',
     // Iterable email
     'itm_source', 'itm_medium', 'itm_campaign', 'itm_content',
     // Klaviyo
