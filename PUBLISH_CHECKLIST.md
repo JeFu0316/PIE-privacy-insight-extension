@@ -102,18 +102,49 @@ design choice (the Google DNS lookup) is worth removing under the new Aug 1 rule
 
 ---
 
-## Next package: 2.1.0 Toolingo (after 2.0.2 is live)
+## Next package: 2.1.0 Toolingo — Phases 3–6 (feature/toolingo-2.1.0-phase2)
 
-- **Do not** re-upload Toolingo branding into the pending 2.0.2 review package.
-- When 2.0.2 is approved/live, submit **2.1.0** as the store rename + brand foundation:
-  - Manifest name: `Toolingo - Privacy Insight`
-  - Popup / i18n / footer / feedback strings: Toolingo + Privacy Insight subtitle
-  - Privacy policy URL unchanged: https://jefu0316.github.io/Index.html/ (already Toolingo)
-- Rebuild zip: `dist/pie-2.1.0.zip` with the full runtime set:
-  `manifest.json`, `background.js`, `content_script.js`, `popup.html/css/js`,
-  `settings.js`, `i18n.js`, `exit-ip.js`, `digest.js`, `reports.js`,
-  `cookie-database.js`, `tracker-domains.js`, `COOKIE_DB_LICENSE.txt`,
-  `toolingo-mark.png`, `toolingo16.png`, `toolingo32.png`, `toolingo128.png`.
+### New permissions (Phases 3–6)
+- **`declarativeNetRequest`** — optional tracker blocking. Justification: "Blocks
+  third-party requests to a bundled list of known tracker domains when the user
+  opts in via Settings > Block known trackers. No data leaves the device."
+
+### New runtime JS files (must be included in package)
+- `clean-urls.js` — on-device tracking-param removal (Phase 3)
+- `block-stats.js` — per-tab and lifetime block counters (Phase 4)
+- `ai-explain.js` — on-device AI privacy explain wrapper (Phase 6)
+
+### AI disclosure requirement
+The Phase 6 AI explain feature uses **Chrome's built-in on-device LanguageModel
+API only**. No cloud LLM or third-party AI service is contacted. Cookie values,
+URLs, or browsing data are **never sent to AI prompts** — only structured
+findings (counts + labels) are used. This must be disclosed in the store listing
+and privacy policy.
+
+### DNR tracker blocking disclosure
+Phase 4 adds opt-in blocking via `declarativeNetRequest` using a bundled, static
+list of ~130 known tracker domains. Rules are applied third-party only; first-party
+requests are never blocked. Disabling the setting clears all rules atomically.
+
+### Fingerprint detection disclosure
+Phase 5 content script injects a MAIN-world watcher that counts canvas and audio
+fingerprinting API calls. Only aggregate counts (integers) are passed back via
+postMessage — no pixel data, audio buffers, or page content. Shield mode adds
+tiny noise to canvas reads (opt-in, off by default).
+
+### Updated package file list (v2.1.0)
+`manifest.json`, `background.js`, `content_script.js`, `popup.html/css/js`,
+`settings.js`, `i18n.js`, `exit-ip.js`, `digest.js`, `reports.js`,
+`cookie-database.js`, `tracker-domains.js`, `block-stats.js`, `clean-urls.js`,
+`ai-explain.js`, `COOKIE_DB_LICENSE.txt`,
+`toolingo-mark.png`, `toolingo16.png`, `toolingo32.png`, `toolingo128.png`.
+
+### Formspree
+Still listed in MUST DO (user-initiated feedback only, no cookies or browsing data).
+
+### Per-permission justification updates
+- `declarativeNetRequest` — "Blocks third-party requests to known tracker domains
+  when user enables 'Block known trackers' in Settings. On-device static ruleset."
 - Refresh store screenshots / promo tiles with the Toolingo wordmark so listing art
   matches the popup (Canva after code rename).
 - Single purpose copy unchanged — no toolbox claims.

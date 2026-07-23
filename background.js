@@ -1,4 +1,4 @@
-importScripts('settings.js', 'i18n.js', 'tracker-domains.js', 'digest.js');
+importScripts('settings.js', 'i18n.js', 'tracker-domains.js', 'digest.js', 'block-stats.js');
 
 let bgSettings = PIE_SETTINGS.DEFAULTS;
 
@@ -7,11 +7,14 @@ async function refreshSettings() {
   PIE_I18N.setLocale(bgSettings.language);
 }
 
-refreshSettings();
+// Initial load — settings must resolve first; DNR rules are applied after the
+// function is defined (see applyDnrRules definition below).
+const _settingsReady = refreshSettings();
 
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area === 'sync' && changes[PIE_SETTINGS.STORAGE_KEY]) {
     const wasOn = bgSettings.thirdPartyNotifications;
+    const wasBlocking = bgSettings.trackerBlock;
     bgSettings = PIE_SETTINGS.mergeWithDefaults(changes[PIE_SETTINGS.STORAGE_KEY].newValue);
     // Keep notification wording in sync with the chosen language.
     PIE_I18N.setLocale(bgSettings.language);
@@ -19,8 +22,68 @@ chrome.storage.onChanged.addListener((changes, area) => {
     if (wasOn && !bgSettings.thirdPartyNotifications) clearAllNotifications();
     // Refresh badges so a toggled trackerBadge setting takes effect immediately.
     refreshAllBadges();
+    // Re-apply DNR rules when trackerBlock setting changes.
+    if (wasBlocking !== bgSettings.trackerBlock) applyDnrRules();
   }
 });
+
+/* ---------- Declarative Net Request — tracker blocking (Phase 4) ----------
+ * Opt-in only (trackerBlock default false). Builds dynamic DNR rules from the
+ * PIE_TRACKERS domain list, targeting third-party requests only. Rules are
+ * replaced atomically; cleared when the feature is disabled.
+ *
+ * We do NOT use onRuleMatchedDebug (CWS-limited). Instead, blocked requests
+ * surface via webRequest.onErrorOccurred with error net::ERR_BLOCKED_BY_CLIENT,
+ * which is caught below to increment block-stats counters. */
+
+const DNR_RULE_ID_BASE = 10000;
+const DNR_RESOURCE_TYPES = [
+  'script', 'xmlhttprequest', 'image', 'sub_frame',
+  'ping', 'media', 'websocket', 'font', 'other'
+];
+
+async function applyDnrRules() {
+  if (typeof PIE_TRACKERS === 'undefined') return;
+  const enabled = bgSettings.trackerBlock;
+  const existing = await chrome.declarativeNetRequest.getDynamicRules();
+  const removeIds = existing.map((r) => r.id);
+
+  if (!enabled) {
+    if (removeIds.length > 0) {
+      await chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds: removeIds });
+    }
+    return;
+  }
+
+  // Build one DNR rule per known tracker domain, third-party only.
+  const domains = Object.keys(PIE_TRACKERS.DOMAINS);
+  const addRules = domains.map((domain, i) => ({
+    id: DNR_RULE_ID_BASE + i,
+    priority: 1,
+    action: { type: 'block' },
+    condition: {
+      requestDomains: [domain],
+      domainType: 'thirdParty',
+      resourceTypes: DNR_RESOURCE_TYPES
+    }
+  }));
+
+  await chrome.declarativeNetRequest.updateDynamicRules({
+    removeRuleIds: removeIds,
+    addRules: addRules
+  });
+}
+
+// Apply rules on startup once settings + function are both ready.
+_settingsReady.then(() => applyDnrRules()).catch(() => {});
+
+// Count ERR_BLOCKED_BY_CLIENT events for known tracker hosts.
+// These fire for requests blocked by DNR as well as other mechanisms.
+const BLOCKED_ERRORS = new Set([
+  'net::ERR_BLOCKED_BY_CLIENT',
+  'net::ERR_BLOCKED_BY_ADMINISTRATOR',
+  'net::ERR_BLOCKED_BY_RESPONSE'
+]);
 
 /* ---------- Toolbar badge = known-tracker count on the current tab ----------
  * The badge shows how many distinct known-tracker hosts a tab has contacted, so
@@ -54,7 +117,11 @@ function refreshAllBadges() {
 chrome.tabs.onUpdated.addListener((tabId, info, tab) => {
   // A new URL means a new page: clear this tab's third-party alert state so the
   // (single) summary notification starts fresh instead of carrying over.
-  if (info.url) clearTabNotification(tabId);
+  if (info.url) {
+    clearTabNotification(tabId);
+    // Reset per-tab block counter for the new page.
+    if (typeof PIE_BLOCK_STATS !== 'undefined') PIE_BLOCK_STATS.resetTab(tabId);
+  }
 
   if (info.status === 'complete' && tab.url) {
     const isSecure = tab.url.startsWith('https://');
@@ -254,11 +321,25 @@ chrome.webRequest.onCompleted.addListener(
 
 chrome.webRequest.onErrorOccurred.addListener(
   (details) => {
-    // The request failed or was cancelled (by the site, the network, or another
-    // extension) — P.I.E only observes, it never blocks. Labelled 'failed', not
-    // 'blocked', to avoid implying P.I.E stopped it.
+    // The request failed or was cancelled. Label as 'failed' in the net log.
     const e = pending.get(details.requestId);
     if (e) { e.status = 'failed'; pending.delete(details.requestId); }
+
+    // When our DNR rules are active, blocked tracker requests surface here with
+    // ERR_BLOCKED_BY_CLIENT. Count them for the block-stats display.
+    if (bgSettings.trackerBlock && BLOCKED_ERRORS.has(details.error)) {
+      try {
+        const reqHost = hostOf(details.url);
+        const topHost = tabHost.get(details.tabId) || '';
+        const isThird = !!(topHost && reqHost && baseDomain(reqHost) !== baseDomain(topHost));
+        if (isThird && typeof PIE_TRACKERS !== 'undefined' && PIE_TRACKERS.lookup(reqHost)) {
+          const tabId = details.tabId;
+          if (typeof PIE_BLOCK_STATS !== 'undefined') {
+            PIE_BLOCK_STATS.recordBlock(tabId >= 0 ? tabId : undefined);
+          }
+        }
+      } catch (_) {}
+    }
   },
   { urls: ['<all_urls>'] }
 );
@@ -268,6 +349,7 @@ chrome.tabs.onRemoved.addListener((tabId) => {
   tabHost.delete(tabId);
   tabTrackers.delete(tabId);
   clearTabNotification(tabId);
+  if (typeof PIE_BLOCK_STATS !== 'undefined') PIE_BLOCK_STATS.removeTab(tabId);
   if (bgSettings.autoClean) scheduleAutoClean();
 });
 
@@ -327,5 +409,23 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg && msg.type === 'CLEAN_TRACKER_COOKIES') {
     sweepTrackerCookies().then((removed) => sendResponse({ removed: removed }));
     return true; // async response
+  }
+  if (msg && msg.type === 'GET_BLOCK_STATS') {
+    const tabId = msg.tabId;
+    const domainsConnected = (tabId != null && tabTrackers.has(tabId))
+      ? tabTrackers.get(tabId).size : 0;
+    if (typeof PIE_BLOCK_STATS !== 'undefined') {
+      PIE_BLOCK_STATS.getStats(tabId).then((stats) => {
+        sendResponse({
+          enabled: !!bgSettings.trackerBlock,
+          pageBlocked: stats.pageBlocked,
+          lifetimeBlocked: stats.lifetimeBlocked,
+          domainsConnected: domainsConnected
+        });
+      });
+      return true; // async
+    }
+    sendResponse({ enabled: false, pageBlocked: 0, lifetimeBlocked: 0, domainsConnected: domainsConnected });
+    return;
   }
 });

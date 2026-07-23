@@ -9,11 +9,14 @@
   <body>
     <div class="bg-fx" id="bg-fx" aria-hidden="true"></div>
     <div class="head">
-      <button type="button" class="logo logo-btn" id="logo-btn"
-        data-i18n-label="header.logo" data-i18n-title="header.logoSoon"
-        aria-label="Toolingo" title="Toolingo website — coming soon">
-        <span class="logo-mark"></span>
-      </button>
+      <div class="logo-wrap" id="logo-wrap">
+        <button type="button" class="logo logo-btn" id="logo-btn"
+          data-i18n-label="header.logo" data-i18n-title="header.logoSoon"
+          aria-label="Toolingo" title="Website coming soon!" aria-expanded="false" aria-controls="logo-soon">
+          <span class="logo-mark"></span>
+        </button>
+        <span class="logo-soon" id="logo-soon" data-i18n="header.logoSoon" aria-hidden="true">Website coming soon!</span>
+      </div>
       <div class="spacer"></div>
       <div class="head-menu" id="head-menu">
         <div class="head-actions" id="head-actions" aria-hidden="true">
@@ -60,9 +63,14 @@
     <div class="body">
       <section class="panel active" id="tab-overview" role="tabpanel">
         <div class="rings" id="ov-rings"></div>
+        <div class="ov-clean-url" id="ov-clean-url" hidden></div>
+        <div class="ov-protection" id="ov-protection" hidden></div>
+        <div class="ov-fp" id="ov-fp" hidden></div>
         <div class="ov-digest" id="ov-digest" hidden></div>
         <div class="ov-myip" id="ov-myip" hidden></div>
         <div class="stats" id="ov-stats"></div>
+        <div class="ov-ai" id="ov-ai" hidden></div>
+        <div class="ov-explain" id="ov-explain" hidden></div>
       </section>
 
       <section class="panel" id="tab-cookies" role="tabpanel">
@@ -211,6 +219,37 @@
           <div class="set-action-result" id="clean-result" role="status"></div>
         </div>
         <div class="set-section">
+          <div class="set-label" data-i18n="settings.cookiesTracking">Privacy protection</div>
+          <label class="set-row set-row-col">
+            <span class="set-row-top">
+              <span class="set-row-text" data-i18n="settings.trackerBlock">Block known trackers (network)</span>
+              <input type="checkbox" class="toggle" id="set-trackerblock" />
+            </span>
+            <span class="set-hint" data-i18n="settings.trackerBlockHint">Uses browser rules to block requests to known tracker domains — third-party only. May occasionally break site features. Off by default.</span>
+          </label>
+          <label class="set-row set-row-col">
+            <span class="set-row-top">
+              <span class="set-row-text" data-i18n="settings.fingerprintDetect">Detect fingerprinting signals</span>
+              <input type="checkbox" class="toggle" id="set-fpdetect" />
+            </span>
+            <span class="set-hint" data-i18n="settings.fingerprintDetectHint">Counts canvas and audio fingerprinting calls. Counts only — nothing leaves your device.</span>
+          </label>
+          <label class="set-row set-row-col">
+            <span class="set-row-top">
+              <span class="set-row-text" data-i18n="settings.fingerprintShield">Fingerprint noise shield (best-effort)</span>
+              <input type="checkbox" class="toggle" id="set-fpshield" />
+            </span>
+            <span class="set-hint" data-i18n="settings.fingerprintShieldHint">Adds tiny noise to canvas reads to degrade fingerprinting accuracy. Best-effort: may not work on all sites and may cause visual glitches.</span>
+          </label>
+          <label class="set-row set-row-col">
+            <span class="set-row-top">
+              <span class="set-row-text" data-i18n="settings.aiExplain">AI privacy explain (on-device)</span>
+              <input type="checkbox" class="toggle" id="set-aiexplain" />
+            </span>
+            <span class="set-hint" data-i18n="settings.aiExplainHint">Uses Chrome's built-in on-device AI to explain this site's privacy posture. Nothing is uploaded — analysis stays on your device.</span>
+          </label>
+        </div>
+        <div class="set-section">
           <div class="set-label" data-i18n="settings.feedback">Help &amp; feedback</div>
           <p class="set-hint" style="margin:0 2px 10px;" data-i18n="settings.feedbackHint">Report a bug or send an idea with the in-app form. Reports are saved on your device until a Toolingo server is available — nothing is emailed automatically.</p>
           <button type="button" class="set-action" id="report-btn" data-i18n="settings.reportBug">Report a bug / feedback</button>
@@ -306,6 +345,8 @@
     <script src="reports.js"></script>
     <script src="i18n.js"></script>
     <script src="settings.js"></script>
+    <script src="clean-urls.js"></script>
+    <script src="ai-explain.js"></script>
     <script src="popup.js"></script>
   </body>
 </html>

@@ -5,12 +5,16 @@
 
 let cookieData = [];
 let currentSiteHost = '';
+let currentTabUrl = '';
+let currentTabId = null;
 let currentIp = '';
 let currentSecure = true;
 let consentDetected = false;
 let popupSettings = null;
 let myIpInfo = null;   // { ip, loc, colo, warp, ptr, kind } when my-IP lookup is on
 const thirdPartyHits = new Set();   // third-party domains seen via network (background.js)
+let blockStats = null;  // { enabled, pageBlocked, lifetimeBlocked, domainsConnected }
+let fpStats = null;     // { canvas, audio, shielded }
 
 const APP_VERSION = '2.1.0';
 
@@ -408,8 +412,12 @@ function renderOverview() {
   rings.appendChild(makeRing(tr('overview.trackTitle'), track.level,
     track.knownTrackers > 0 ? trn('overview.trackers', track.knownTrackers) : tr('overview.noneKnown')));
 
+  renderOverviewCleanUrl();
+  renderOverviewProtection();
+  renderOverviewFp();
   renderOverviewMyIp();
   renderOverviewDigest();
+  renderOverviewAi();
 
   const stats = document.getElementById('ov-stats');
   stats.innerHTML = '';
@@ -417,6 +425,177 @@ function renderOverview() {
   stats.appendChild(statTile('b', ICO.third, thirdParty, tr('stats.thirdParty')));
   stats.appendChild(statTile('a', ICO.track, track.knownTrackers, tr('stats.knownTrackers')));
   stats.appendChild(statTile('g', ICO.check, sens.count, tr('stats.withPII')));
+  if (blockStats && blockStats.enabled && blockStats.pageBlocked > 0) {
+    stats.appendChild(statTile('r', ICO.check, blockStats.pageBlocked, tr('stats.blocked')));
+  }
+}
+
+function renderOverviewCleanUrl() {
+  const box = document.getElementById('ov-clean-url');
+  if (!box) return;
+  box.innerHTML = '';
+
+  if (typeof PIE_CLEAN_URLS === 'undefined') { box.hidden = true; return; }
+  const url = currentTabUrl;
+  if (!url || (!url.startsWith('http://') && !url.startsWith('https://'))) {
+    box.hidden = true;
+    return;
+  }
+
+  const count = PIE_CLEAN_URLS.countTrackingParams(url);
+  if (count === 0) { box.hidden = true; return; }
+
+  box.hidden = false;
+  const row = el('div', 'ov-clean-url-row');
+  const hint = el('span', 'ov-clean-hint', trn('cleanUrls.hint', count));
+  const btn = el('button', 'ov-clean-btn', tr('cleanUrls.button'));
+  btn.addEventListener('click', async () => {
+    btn.disabled = true;
+    try {
+      const result = PIE_CLEAN_URLS.clean(url);
+      if (!result.changed) { btn.disabled = false; return; }
+      try {
+        await chrome.tabs.update(currentTabId, { url: result.url });
+        showToast(tr('cleanUrls.done'));
+        box.hidden = true;
+      } catch (_) {
+        // Fallback: copy to clipboard
+        try { await navigator.clipboard.writeText(result.url); } catch (_) {}
+        showToast(tr('cleanUrls.copyFallback'));
+        btn.disabled = false;
+      }
+    } catch (_) {
+      btn.disabled = false;
+    }
+  });
+  row.appendChild(hint);
+  row.appendChild(btn);
+  box.appendChild(row);
+}
+
+function renderOverviewProtection() {
+  const box = document.getElementById('ov-protection');
+  if (!box) return;
+  box.innerHTML = '';
+
+  if (!blockStats) { box.hidden = true; return; }
+  if (!blockStats.enabled && blockStats.lifetimeBlocked === 0) { box.hidden = true; return; }
+
+  box.hidden = false;
+  const row = el('div', 'ov-prot-row');
+  const pageEl = el('div', 'ov-prot-tile');
+  pageEl.appendChild(el('div', 'ov-prot-n', String(blockStats.pageBlocked)));
+  pageEl.appendChild(el('div', 'ov-prot-l', tr('overview.blockedPage')));
+  const lifeEl = el('div', 'ov-prot-tile');
+  lifeEl.appendChild(el('div', 'ov-prot-n', String(blockStats.lifetimeBlocked)));
+  lifeEl.appendChild(el('div', 'ov-prot-l', tr('overview.blockedLifetime')));
+  row.appendChild(pageEl);
+  row.appendChild(lifeEl);
+  if (blockStats.domainsConnected > 0) {
+    const connEl = el('div', 'ov-prot-tile');
+    connEl.appendChild(el('div', 'ov-prot-n', String(blockStats.domainsConnected)));
+    connEl.appendChild(el('div', 'ov-prot-l', tr('overview.domainsConnected')));
+    row.appendChild(connEl);
+  }
+  box.appendChild(row);
+  if (!blockStats.enabled) {
+    const note = el('div', 'ov-prot-note set-hint', tr('settings.trackerBlock') + ' — off');
+    box.appendChild(note);
+  }
+}
+
+function renderOverviewFp() {
+  const box = document.getElementById('ov-fp');
+  if (!box) return;
+  box.innerHTML = '';
+
+  if (!popupSettings || !popupSettings.fingerprintDetect) { box.hidden = true; return; }
+  if (!fpStats || (fpStats.canvas === 0 && fpStats.audio === 0)) { box.hidden = true; return; }
+
+  box.hidden = false;
+  let text = tr('overview.fpSignals', { canvas: fpStats.canvas, audio: fpStats.audio });
+  if (fpStats.shielded) text += ' · ' + tr('overview.fpShieldOn');
+  box.appendChild(el('div', 'ov-fp-line', text));
+}
+
+function renderOverviewAi() {
+  const box = document.getElementById('ov-ai');
+  if (!box) return;
+  box.innerHTML = '';
+
+  if (!popupSettings || !popupSettings.aiExplainEnabled) { box.hidden = true; return; }
+
+  box.hidden = false;
+  const btn = el('button', 'ov-ai-btn', tr('overview.aiExplainBtn'));
+  const badge = el('span', 'ov-ai-badge', tr('overview.aiOnDevice'));
+  btn.addEventListener('click', () => runAiExplain());
+  box.appendChild(btn);
+  box.appendChild(badge);
+}
+
+async function runAiExplain() {
+  const explainBox = document.getElementById('ov-explain');
+  if (!explainBox) return;
+  if (typeof PIE_AI_EXPLAIN === 'undefined') {
+    explainBox.hidden = false;
+    explainBox.textContent = tr('overview.aiUnavailable');
+    return;
+  }
+
+  explainBox.hidden = false;
+  explainBox.textContent = '';
+  const loading = el('div', 'ov-explain-loading', tr('overview.aiLoading'));
+  explainBox.appendChild(loading);
+
+  let avail;
+  try { avail = await PIE_AI_EXPLAIN.availability(); } catch (_) { avail = 'unavailable'; }
+
+  if (avail === 'unavailable') {
+    loading.textContent = tr('overview.aiUnavailable');
+    return;
+  }
+
+  if (avail === 'downloadable' || avail === 'downloading') {
+    loading.textContent = tr('overview.aiLoading');
+  }
+
+  const sens = overallSensitivity(cookieData);
+  const track = overallTracking(cookieData);
+  const facts = {
+    host: currentSiteHost,
+    https: currentSecure,
+    sensitivityLabel: sens.level,
+    trackingLabel: track.level,
+    cookieCount: cookieData.length,
+    thirdPartyCount: cookieData.filter(isThirdPartyCookie).length,
+    knownTrackers: track.knownTrackers,
+    piiCount: sens.count,
+    blockStats: blockStats,
+    fpSignals: fpStats
+  };
+
+  let result;
+  try { result = await PIE_AI_EXPLAIN.explain(facts); } catch (_) { result = { error: 'explain failed' }; }
+  explainBox.innerHTML = '';
+
+  if (result.error) {
+    explainBox.textContent = tr('overview.aiUnavailable');
+    return;
+  }
+
+  const summary = el('div', 'ov-explain-summary', result.summary);
+  explainBox.appendChild(summary);
+  if (result.actions && result.actions.length) {
+    const list = el('ul', 'ov-explain-actions');
+    result.actions.forEach((a) => {
+      const li = document.createElement('li');
+      li.textContent = a;
+      list.appendChild(li);
+    });
+    explainBox.appendChild(list);
+  }
+  const deviceNote = el('div', 'ov-ai-badge', tr('overview.aiOnDevice'));
+  explainBox.appendChild(deviceNote);
 }
 
 function renderOverviewMyIp() {
@@ -690,9 +869,33 @@ function setupTheme(initialTheme) {
 function setupHeadMenu() {
   const menuBtn = document.getElementById('menu-btn');
   const logoBtn = document.getElementById('logo-btn');
+  const logoWrap = document.getElementById('logo-wrap');
+  const logoSoon = document.getElementById('logo-soon');
   const settingsBtn = document.getElementById('menu-settings');
   const reportBtn = document.getElementById('menu-report');
   const tcBtn = document.getElementById('menu-tc');
+  let logoSoonTimer = null;
+
+  function hideLogoSoon() {
+    if (!logoWrap || !logoBtn) return;
+    logoWrap.classList.remove('soon-open');
+    logoBtn.setAttribute('aria-expanded', 'false');
+    if (logoSoon) logoSoon.setAttribute('aria-hidden', 'true');
+    if (logoSoonTimer) {
+      clearTimeout(logoSoonTimer);
+      logoSoonTimer = null;
+    }
+  }
+
+  function showLogoSoon() {
+    if (!logoWrap || !logoBtn) return;
+    logoWrap.classList.add('soon-open');
+    logoBtn.setAttribute('aria-expanded', 'true');
+    if (logoSoon) logoSoon.setAttribute('aria-hidden', 'false');
+    if (logoSoonTimer) clearTimeout(logoSoonTimer);
+    logoSoonTimer = setTimeout(hideLogoSoon, 2600);
+  }
+
   if (menuBtn) menuBtn.addEventListener('click', toggleHeadMenu);
   if (settingsBtn) {
     settingsBtn.addEventListener('click', () => {
@@ -714,7 +917,8 @@ function setupHeadMenu() {
         chrome.tabs.create({ url: TOOLINGO_SITE_URL });
         return;
       }
-      logoBtn.title = tr('header.logoSoon');
+      if (logoWrap && logoWrap.classList.contains('soon-open')) hideLogoSoon();
+      else showLogoSoon();
     });
   }
 }
@@ -1118,6 +1322,8 @@ async function showCookies() {
   try { url = new URL(tab.url); } catch (e) { return; }
 
   currentSiteHost = url.hostname;
+  currentTabUrl = tab.url;
+  currentTabId = tab.id != null ? tab.id : null;
   currentSecure = url.protocol === 'https:';
   renderSiteBar();
 
@@ -1127,6 +1333,29 @@ async function showCookies() {
   }
 
   const myIpPromise = refreshMyIp();
+
+  // Fetch block stats from background.
+  blockStats = null;
+  const blockStatsPromise = new Promise((resolve) => {
+    try {
+      chrome.runtime.sendMessage({ type: 'GET_BLOCK_STATS', tabId: currentTabId }, (resp) => {
+        if (!chrome.runtime.lastError && resp) blockStats = resp;
+        resolve();
+      });
+    } catch (_) { resolve(); }
+  });
+
+  // Fetch fingerprint stats from content script.
+  fpStats = null;
+  const fpPromise = new Promise((resolve) => {
+    if (!popupSettings || !popupSettings.fingerprintDetect) { resolve(); return; }
+    try {
+      chrome.tabs.sendMessage(tab.id, { type: 'GET_FINGERPRINT_STATS' }, (resp) => {
+        if (!chrome.runtime.lastError && resp) fpStats = resp;
+        resolve();
+      });
+    } catch (_) { resolve(); }
+  });
 
   const domainVariants = [url.hostname, '.' + url.hostname];
   let all = [];
@@ -1138,7 +1367,7 @@ async function showCookies() {
   for (const c of all) map.set(`${c.name}|${c.domain}|${c.path}`, c);
   cookieData = Array.from(map.values());
 
-  await myIpPromise;
+  await Promise.all([myIpPromise, blockStatsPromise, fpPromise]);
   renderAll();
 }
 
@@ -1384,6 +1613,10 @@ function bindSettingsControls(settings) {
   const badgeEl = document.getElementById('set-badge');
   const autoCleanEl = document.getElementById('set-autoclean');
   const digestEl = document.getElementById('set-digest');
+  const trackerBlockEl = document.getElementById('set-trackerblock');
+  const fpDetectEl = document.getElementById('set-fpdetect');
+  const fpShieldEl = document.getElementById('set-fpshield');
+  const aiExplainEl = document.getElementById('set-aiexplain');
   const cleanNowBtn = document.getElementById('clean-now');
   const cleanResult = document.getElementById('clean-result');
   const allowlistInput = document.getElementById('allowlist-input');
@@ -1400,6 +1633,10 @@ function bindSettingsControls(settings) {
   if (badgeEl) badgeEl.checked = settings.trackerBadge;
   if (autoCleanEl) autoCleanEl.checked = settings.autoClean;
   if (digestEl) digestEl.checked = settings.weeklyDigestEnabled !== false;
+  if (trackerBlockEl) trackerBlockEl.checked = settings.trackerBlock === true;
+  if (fpDetectEl) fpDetectEl.checked = settings.fingerprintDetect !== false;
+  if (fpShieldEl) fpShieldEl.checked = settings.fingerprintShield === true;
+  if (aiExplainEl) aiExplainEl.checked = settings.aiExplainEnabled === true;
   applyCustomVars(settings.customTheme);
   syncThemeControls(settings.theme);
   syncBgAnimControls(settings.backgroundAnim);
@@ -1546,6 +1783,36 @@ function bindSettingsControls(settings) {
     digestEl.addEventListener('change', async () => {
       popupSettings = await PIE_SETTINGS.save({ weeklyDigestEnabled: digestEl.checked });
       renderOverviewDigest();
+    });
+  }
+
+  if (trackerBlockEl) {
+    trackerBlockEl.addEventListener('change', async () => {
+      popupSettings = await PIE_SETTINGS.save({ trackerBlock: trackerBlockEl.checked });
+      // Re-fetch block stats after toggle.
+      blockStats = null;
+      renderOverviewProtection();
+    });
+  }
+
+  if (fpDetectEl) {
+    fpDetectEl.addEventListener('change', async () => {
+      popupSettings = await PIE_SETTINGS.save({ fingerprintDetect: fpDetectEl.checked });
+      if (fpShieldEl) fpShieldEl.disabled = !fpDetectEl.checked;
+    });
+  }
+
+  if (fpShieldEl) {
+    fpShieldEl.disabled = !(settings.fingerprintDetect !== false);
+    fpShieldEl.addEventListener('change', async () => {
+      popupSettings = await PIE_SETTINGS.save({ fingerprintShield: fpShieldEl.checked });
+    });
+  }
+
+  if (aiExplainEl) {
+    aiExplainEl.addEventListener('change', async () => {
+      popupSettings = await PIE_SETTINGS.save({ aiExplainEnabled: aiExplainEl.checked });
+      renderOverviewAi();
     });
   }
 

@@ -146,6 +146,10 @@ body {
 
 /* header */
 .head { display: flex; align-items: center; gap: 8px; padding: 10px 12px 8px; min-height: 44px; }
+.logo-wrap {
+  display: flex; align-items: center; gap: 0; flex: none; min-width: 0;
+  position: relative; z-index: 2;
+}
 .logo-btn {
   width: 36px; height: 36px; border: none; padding: 0; border-radius: 10px;
   background: transparent; cursor: pointer; display: grid; place-items: center; flex: none;
@@ -164,30 +168,78 @@ body {
   mask-repeat: no-repeat;
   mask-position: center;
 }
+.logo-soon {
+  position: absolute; left: calc(100% + 2px); top: 50%;
+  font-size: 11px; font-weight: 600; color: var(--text-2);
+  white-space: nowrap; line-height: 1.2;
+  padding: 4px 0 4px 6px;
+  opacity: 0;
+  transform: translate3d(-6px, -50%, 0);
+  clip-path: inset(0 100% 0 0);
+  pointer-events: none;
+  transition:
+    opacity .22s ease,
+    transform .32s cubic-bezier(.22, 1, .36, 1),
+    clip-path .32s cubic-bezier(.22, 1, .36, 1);
+  will-change: transform, opacity, clip-path;
+}
+.logo-wrap.soon-open .logo-soon {
+  opacity: 1;
+  transform: translate3d(0, -50%, 0);
+  clip-path: inset(0 0 0 0);
+}
 .head-menu {
   display: flex; align-items: center; justify-content: flex-end;
-  flex: none; gap: 0; margin-left: auto;
+  flex: none; gap: 0; margin-left: auto; position: relative; z-index: 3;
 }
+/* GPU-friendly tray: transform/opacity only (no max-width layout thrash) */
 .head-actions {
+  position: absolute; right: 34px; top: 50%;
   display: flex; align-items: center; gap: 2px;
-  max-width: 0; opacity: 0; overflow: hidden;
-  transform: translateX(10px);
+  opacity: 0;
+  transform: translate3d(10px, -50%, 0);
   pointer-events: none;
-  transition: max-width .22s ease, opacity .18s ease, transform .22s ease, margin .22s ease;
-  margin-right: 0;
+  visibility: hidden;
+  transition:
+    opacity .22s ease,
+    transform .3s cubic-bezier(.22, 1, .36, 1),
+    visibility 0s linear .3s;
+  will-change: transform, opacity;
 }
 body.head-menu-open .head-actions {
-  max-width: 150px; opacity: 1; transform: translateX(0);
-  pointer-events: auto; margin-right: 2px;
+  opacity: 1;
+  transform: translate3d(0, -50%, 0);
+  pointer-events: auto;
+  visibility: visible;
+  transition:
+    opacity .2s ease,
+    transform .28s cubic-bezier(.22, 1, .36, 1),
+    visibility 0s;
 }
-.menu-btn { position: relative; }
+.head-actions .icon-btn {
+  opacity: 0;
+  transform: translate3d(6px, 0, 0);
+  transition:
+    background-color .2s ease, color .2s ease,
+    opacity .2s ease, transform .26s cubic-bezier(.22, 1, .36, 1);
+}
+body.head-menu-open .head-actions .icon-btn {
+  opacity: 1;
+  transform: none;
+}
+body.head-menu-open .head-actions .icon-btn:nth-child(1) { transition-delay: .01s; }
+body.head-menu-open .head-actions .icon-btn:nth-child(2) { transition-delay: .04s; }
+body.head-menu-open .head-actions .icon-btn:nth-child(3) { transition-delay: .07s; }
+body.head-menu-open .head-actions .icon-btn:nth-child(4) { transition-delay: .1s; }
+.menu-btn { position: relative; z-index: 1; }
 .menu-glyph {
   width: 18px; height: 14px; display: grid; place-items: center; position: relative;
 }
 .menu-bar {
   position: absolute; left: 50%; width: 3px; height: 3px; border-radius: 50%;
   background: currentColor; transform: translateX(-50%);
-  transition: top .18s ease, width .18s ease, height .18s ease, border-radius .18s ease, transform .18s ease;
+  transition: top .2s cubic-bezier(.22, 1, .36, 1), width .2s cubic-bezier(.22, 1, .36, 1),
+    height .2s ease, border-radius .2s ease, transform .2s ease;
 }
 .menu-bar-a { top: 1px; }
 .menu-bar-b { top: 5.5px; }
@@ -660,3 +712,47 @@ html.reduce-motion *, html.reduce-motion *::before, html.reduce-motion *::after 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; }
 }
+
+/* ---- Phase 3: Clean URL ---- */
+.ov-clean-url { margin: 6px 12px 0; }
+.ov-clean-url-row { display: flex; align-items: center; gap: 8px; padding: 6px 10px;
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  border-radius: 8px; }
+.ov-clean-hint { flex: 1; font-size: .8rem; color: var(--accent); }
+.ov-clean-btn { padding: 4px 12px; font-size: .8rem; border-radius: 6px;
+  background: var(--accent); color: #fff; border: none; cursor: pointer;
+  white-space: nowrap; }
+.ov-clean-btn:hover { filter: brightness(1.1); }
+.ov-clean-btn:disabled { opacity: .5; cursor: default; }
+
+/* ---- Phase 4: Protection row ---- */
+.ov-protection { margin: 6px 12px 0; }
+.ov-prot-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.ov-prot-tile { background: var(--surface); border: 1px solid var(--line);
+  border-radius: 8px; padding: 6px 12px; min-width: 80px; text-align: center; }
+.ov-prot-n { font-size: 1.1rem; font-weight: 700; color: var(--brand); }
+.ov-prot-l { font-size: .72rem; color: var(--muted); margin-top: 2px; }
+.ov-prot-note { margin-top: 4px; font-size: .75rem; }
+
+/* ---- Phase 5: Fingerprint ---- */
+.ov-fp { margin: 6px 12px 0; }
+.ov-fp-line { font-size: .8rem; color: var(--muted);
+  padding: 4px 10px; background: var(--surface); border-radius: 6px;
+  border: 1px solid var(--line); }
+
+/* ---- Phase 6: AI explain ---- */
+.ov-ai { margin: 8px 12px 0; display: flex; align-items: center; gap: 8px; }
+.ov-ai-btn { padding: 5px 14px; font-size: .82rem; border-radius: 8px;
+  background: color-mix(in srgb, var(--brand) 18%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--brand) 35%, transparent);
+  color: var(--brand); cursor: pointer; font-weight: 600; }
+.ov-ai-btn:hover { background: color-mix(in srgb, var(--brand) 28%, var(--surface)); }
+.ov-ai-badge { font-size: .72rem; color: var(--muted); }
+.ov-explain { margin: 6px 12px 4px; padding: 10px 12px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
+  font-size: .82rem; line-height: 1.5; }
+.ov-explain-loading { color: var(--muted); }
+.ov-explain-summary { margin-bottom: 6px; }
+.ov-explain-actions { margin: 0; padding-left: 18px; }
+.ov-explain-actions li { margin-bottom: 3px; }

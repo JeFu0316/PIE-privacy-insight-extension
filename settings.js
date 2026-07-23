@@ -37,7 +37,16 @@
     trackerBadge: true,
     autoClean: false,
     autoCleanAllowlist: [],
-    weeklyDigestEnabled: true
+    weeklyDigestEnabled: true,
+    // Phase 3: Clean URLs
+    cleanUrlButton: true,
+    // Phase 4: Tracker DNR blocking (opt-in)
+    trackerBlock: false,
+    // Phase 5: Fingerprint detection + shield
+    fingerprintDetect: true,
+    fingerprintShield: false,
+    // Phase 6: On-device AI explain
+    aiExplainEnabled: false
   });
 
   const VALID = {
@@ -161,6 +170,21 @@
     }
     if (typeof raw.weeklyDigestEnabled === 'boolean') {
       out.weeklyDigestEnabled = raw.weeklyDigestEnabled;
+    }
+    if (typeof raw.cleanUrlButton === 'boolean') {
+      out.cleanUrlButton = raw.cleanUrlButton;
+    }
+    if (typeof raw.trackerBlock === 'boolean') {
+      out.trackerBlock = raw.trackerBlock;
+    }
+    if (typeof raw.fingerprintDetect === 'boolean') {
+      out.fingerprintDetect = raw.fingerprintDetect;
+    }
+    if (typeof raw.fingerprintShield === 'boolean') {
+      out.fingerprintShield = raw.fingerprintShield;
+    }
+    if (typeof raw.aiExplainEnabled === 'boolean') {
+      out.aiExplainEnabled = raw.aiExplainEnabled;
     }
 
     out.schemaVersion = SCHEMA_VERSION;
