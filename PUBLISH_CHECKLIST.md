@@ -80,7 +80,9 @@ design choice (the Google DNS lookup) is worth removing under the new Aug 1 rule
   `digest.js`, `cookie-database.js`, `tracker-domains.js`, `COOKIE_DB_LICENSE.txt`,
   `toolingo-mark.png`, `toolingo16/32/128.png`. **Exclude:** `.git/`, `.claude/`,
   `CLAUDE.md`, `FINDINGS_PIE.md`, `README.md`, `PUBLISH_CHECKLIST.md`, `prototype/`,
-  `tests/`, `dist/`, `err.tmp`, `_privacy-site/`, legacy `pie16/32/128.png` (optional keep).
+  `tests/`, `dist/`, `err.tmp`, legacy `pie16/32/128.png` (optional keep). Keep the
+  privacy-policy clone at `C:\PIE-privacy-site` (outside the extension root — Chrome
+  rejects `_`-prefixed folder names on Load unpacked).
 - ~~Icons: the manifest maps size `48` to `pie32.png` (a 32px image).~~ **Partly done:**
   the 48px slot now downscales from `pie128.png` (sharper than upscaling the 32px), a
   `32` mapping was added, and a top-level `"icons"` field now mirrors
