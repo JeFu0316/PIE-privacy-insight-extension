@@ -212,8 +212,8 @@ third-party tracking, and connection security. No “all-in-one tools suite” s
 Still purpose-aligned; build one-by-one with an explicit go each time:
 - **Allowlist UI** for Auto-Clean (`autoCleanAllowlist`) — **DONE (Phase 2a)**
 - **Weekly privacy digest** (on-device summary; no external upload) — **DONE (Phase 2b)**
-- **Optional DNR tracker block** (`declarativeNetRequest` — new permission; deferred until Auto-Clean proves itself)
-- Out of scope as core product: ad-block suite, password manager, malware AV, VPN
+- **Phases 3–6** scheduled below (Clean URLs → DNR + stats → fingerprint → on-device AI Explain)
+- Out of scope as *core* Toolingo product: full ad-block suite, password manager, malware AV, VPN (password vault = separate extension if ever)
 
 ### Phase 2a — Auto-Clean allowlist UI — DONE
 Settings editor for `autoCleanAllowlist`: add/remove domains, “Add this site,” domain
@@ -225,3 +225,66 @@ On-device weekly aggregates in `chrome.storage.local` (`digest.js`): known-track
 contact counts, top known-tracker base domains, cookies cleaned by Auto-Clean /
 Clean now. Shown on Overview when `weeklyDigestEnabled` (default on). No first-party
 browsing hosts stored; no `alarms` permission (week rolls on read/write); nothing uploaded.
+
+### Phase 3+ scheduled roadmap (approved)
+
+Product stance: Toolingo stays **Privacy Insight** (+ protect). AI is **“Explain
+(on-device)”**, not an “AI extension.” Vault remains a separate app (out of band).
+
+| Phase | Feature | Notes |
+|-------|---------|--------|
+| **3** | Clean URLs (manual first) | Opt-in “Clean this URL” in popup; bundled local rules; no auto-redirect yet |
+| **4** | Narrow tracker DNR + stats | `declarativeNetRequest` for known trackers only; page + lifetime block stats |
+| **5** | Fingerprint detect → light shield | Detect/report first; optional canvas noise **off by default** |
+| **6** | On-device AI Privacy Explain | Chrome built-in Prompt/Summarizer; narrate local findings; graceful fallback |
+| — | Toolingo Vault | Separate extension later — not on 2.x critical path |
+
+Each phase still needs a packaging/review checkpoint before the next store ship.
+DNR (Phase 4) adds a manifest permission — disclose in CWS + privacy policy.
+
+---
+
+## Idea backlog (inspired by other extensions)
+
+Captured ideas + scheduled status. Chrome Web Store **single-purpose** rule still
+applies: Toolingo is Privacy Insight (cookies / tracking / connection security).
+
+### A. Clean URLs — strip tracking params — **SCHEDULED (Phase 3)**
+**Inspired by:** ClearURLs (Firefox).  
+Manual “Clean this URL” first; automatic DNR `queryTransform` only after manual
+proves safe (may share Phase 4 permission). Bundled local rules only.
+
+### B. Password / passkey vault + click-to-autofill — **OUT OF BAND**
+**Inspired by:** Bitwarden. Keep **out of Toolingo core**; separate “Toolingo Vault”
+extension if ever. Near-term: do not schedule.
+
+### C. Anti-fingerprinting (JS API hardening) — **SCHEDULED (Phase 5)**
+**Inspired by:** CanvasBlocker (Firefox).  
+Toolingo did not alter canvas/Audio/WebGL before this phase. Plan: (1) detect/report,
+(2) optional light canvas-noise shield off by default — never full CanvasBlocker
+parity in v1.
+
+### D. Efficient wide-spectrum content / tracker blocker + stats — **SCHEDULED (Phase 4, narrowed)**
+**Inspired by:** uBlock-class blockers.  
+Ship **narrow known-tracker DNR** (not full cosmetic ad-block) + Overview counters
+(blocked this page, domains connected, blocked since install).
+
+### E. On-device AI Privacy Explain — **SCHEDULED (Phase 6)**
+**Inspired by:** Chrome built-in AI (Prompt / Summarizer / Translator).  
+**Honest fit:** Not required for core value; good as progressive enhancement **only**
+if on-device (no cloud LLM uploading cookies/URLs). Narrate Sensitivity/Tracking,
+suggest actions, optional digest-in-words. Non-goals: free-form page chat, Writer API,
+cloud fallback. Default `aiExplainEnabled` **off** until download UX is solid.
+Graceful fallback when `LanguageModel.availability()` is `unavailable`.
+
+### Priority order (locked)
+1. Clean URLs (manual → optional auto later)
+2. Tracker DNR + page/lifetime stats
+3. Fingerprint detect → light opt-in shield
+4. On-device AI Explain
+5. Password vault — separate product
+
+### Open decisions (store ships)
+- Insight-first vs insight+protect copy for CWS when DNR ships
+- Confirm each phase go before version bump / permission change in the published package
+
