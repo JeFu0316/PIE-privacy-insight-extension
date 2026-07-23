@@ -285,7 +285,13 @@
       'overview.aiLoading': 'Downloading on-device model\u2026',
       'overview.aiUnavailable': 'On-device AI is not available in this Chrome version.',
       'overview.aiOff': "Enable 'AI explain' in Settings to use this feature.",
-      'overview.aiOnDevice': 'On-device \u00b7 nothing uploaded'
+      'overview.aiOnDevice': 'On-device \u00b7 nothing uploaded',
+      'cookies.toolsTitle': "Cookie tools",
+      'net.blockTitle': "Tracker blocking",
+      'security.fpTitle': "Fingerprinting",
+      'cleanUrls.section': "Clean URL",
+      'cleanUrls.none': "No tracking parameters on this URL",
+      'overview.aiTitle': "Privacy explain"
     },
 
     zh_CN: {
@@ -547,7 +553,13 @@
       'overview.aiLoading': '正在下载本地模型\u2026',
       'overview.aiUnavailable': '此 Chrome 版本不支持本地 AI。',
       'overview.aiOff': '请在设置中开启"AI 解释"以使用此功能。',
-      'overview.aiOnDevice': '本地处理 \u00b7 不上传任何内容'
+      'overview.aiOnDevice': '本地处理 \u00b7 不上传任何内容',
+      'cookies.toolsTitle': "Cookie 工具",
+      'net.blockTitle': "追踪器拦截",
+      'security.fpTitle': "指纹识别",
+      'cleanUrls.section': "清理 URL",
+      'cleanUrls.none': "此 URL 没有追踪参数",
+      'overview.aiTitle': "隐私解释"
     },
 
     zh_TW: {
@@ -809,7 +821,13 @@
       'overview.aiLoading': '正在下載本機模型\u2026',
       'overview.aiUnavailable': '此 Chrome 版本不支援本機 AI。',
       'overview.aiOff': '請在設定中開啟「AI 說明」以使用此功能。',
-      'overview.aiOnDevice': '本機處理 \u00b7 不上傳任何內容'
+      'overview.aiOnDevice': '本機處理 \u00b7 不上傳任何內容',
+      'cookies.toolsTitle': "Cookie 工具",
+      'net.blockTitle': "追蹤器封鎖",
+      'security.fpTitle': "指紋識別",
+      'cleanUrls.section': "清理 URL",
+      'cleanUrls.none': "此 URL 沒有追蹤參數",
+      'overview.aiTitle': "隱私說明"
     },
 
     ru: {
@@ -1070,7 +1088,13 @@
       'overview.aiLoading': 'Downloading on-device model\u2026',
       'overview.aiUnavailable': 'On-device AI is not available in this Chrome version.',
       'overview.aiOff': "Enable 'AI explain' in Settings to use this feature.",
-      'overview.aiOnDevice': 'On-device \u00b7 nothing uploaded'
+      'overview.aiOnDevice': 'On-device \u00b7 nothing uploaded',
+      'cookies.toolsTitle': "Cookie tools",
+      'net.blockTitle': "Tracker blocking",
+      'security.fpTitle': "Fingerprinting",
+      'cleanUrls.section': "Clean URL",
+      'cleanUrls.none': "No tracking parameters on this URL",
+      'overview.aiTitle': "Privacy explain"
     },
 
     es: {
@@ -1331,7 +1355,13 @@
       'overview.aiLoading': 'Downloading on-device model\u2026',
       'overview.aiUnavailable': 'On-device AI is not available in this Chrome version.',
       'overview.aiOff': "Enable 'AI explain' in Settings to use this feature.",
-      'overview.aiOnDevice': 'On-device \u00b7 nothing uploaded'
+      'overview.aiOnDevice': 'On-device \u00b7 nothing uploaded',
+      'cookies.toolsTitle': "Cookie tools",
+      'net.blockTitle': "Tracker blocking",
+      'security.fpTitle': "Fingerprinting",
+      'cleanUrls.section': "Clean URL",
+      'cleanUrls.none': "No tracking parameters on this URL",
+      'overview.aiTitle': "Privacy explain"
     },
 
     fr: {
@@ -1592,7 +1622,13 @@
       'overview.aiLoading': 'Downloading on-device model…',
       'overview.aiUnavailable': 'On-device AI is not available in this Chrome version.',
       'overview.aiOff': 'Enable AI explain in Settings to use this feature.',
-      'overview.aiOnDevice': 'On-device · nothing uploaded'
+      'overview.aiOnDevice': 'On-device · nothing uploaded',
+      'cookies.toolsTitle': "Cookie tools",
+      'net.blockTitle': "Tracker blocking",
+      'security.fpTitle': "Fingerprinting",
+      'cleanUrls.section': "Clean URL",
+      'cleanUrls.none': "No tracking parameters on this URL",
+      'overview.aiTitle': "Privacy explain"
     },
 
     de: {
@@ -1853,7 +1889,13 @@
       'overview.aiLoading': 'Downloading on-device model…',
       'overview.aiUnavailable': 'On-device AI is not available in this Chrome version.',
       'overview.aiOff': 'Enable AI explain in Settings to use this feature.',
-      'overview.aiOnDevice': 'On-device · nothing uploaded'
+      'overview.aiOnDevice': 'On-device · nothing uploaded',
+      'cookies.toolsTitle': "Cookie tools",
+      'net.blockTitle': "Tracker blocking",
+      'security.fpTitle': "Fingerprinting",
+      'cleanUrls.section': "Clean URL",
+      'cleanUrls.none': "No tracking parameters on this URL",
+      'overview.aiTitle': "Privacy explain"
     },
 
     pt_BR: {
@@ -2114,7 +2156,13 @@
       'overview.aiLoading': 'Downloading on-device model…',
       'overview.aiUnavailable': 'On-device AI is not available in this Chrome version.',
       'overview.aiOff': 'Enable AI explain in Settings to use this feature.',
-      'overview.aiOnDevice': 'On-device · nothing uploaded'
+      'overview.aiOnDevice': 'On-device · nothing uploaded',
+      'cookies.toolsTitle': "Cookie tools",
+      'net.blockTitle': "Tracker blocking",
+      'security.fpTitle': "Fingerprinting",
+      'cleanUrls.section': "Clean URL",
+      'cleanUrls.none': "No tracking parameters on this URL",
+      'overview.aiTitle': "Privacy explain"
     },
 
     ja: {
@@ -2375,7 +2423,13 @@
       'overview.aiLoading': 'Downloading on-device model…',
       'overview.aiUnavailable': 'On-device AI is not available in this Chrome version.',
       'overview.aiOff': 'Enable AI explain in Settings to use this feature.',
-      'overview.aiOnDevice': 'On-device · nothing uploaded'
+      'overview.aiOnDevice': 'On-device · nothing uploaded',
+      'cookies.toolsTitle': "Cookie tools",
+      'net.blockTitle': "Tracker blocking",
+      'security.fpTitle': "Fingerprinting",
+      'cleanUrls.section': "Clean URL",
+      'cleanUrls.none': "No tracking parameters on this URL",
+      'overview.aiTitle': "Privacy explain"
     },
 
     ko: {
@@ -2636,7 +2690,13 @@
       'overview.aiLoading': 'Downloading on-device model…',
       'overview.aiUnavailable': 'On-device AI is not available in this Chrome version.',
       'overview.aiOff': 'Enable AI explain in Settings to use this feature.',
-      'overview.aiOnDevice': 'On-device · nothing uploaded'
+      'overview.aiOnDevice': 'On-device · nothing uploaded',
+      'cookies.toolsTitle': "Cookie tools",
+      'net.blockTitle': "Tracker blocking",
+      'security.fpTitle': "Fingerprinting",
+      'cleanUrls.section': "Clean URL",
+      'cleanUrls.none': "No tracking parameters on this URL",
+      'overview.aiTitle': "Privacy explain"
     }
   };
 
