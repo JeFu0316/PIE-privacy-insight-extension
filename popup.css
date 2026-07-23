@@ -164,18 +164,45 @@ body {
   mask-repeat: no-repeat;
   mask-position: center;
 }
+.head-menu {
+  display: flex; align-items: center; justify-content: flex-end;
+  flex: none; gap: 0; margin-left: auto;
+}
 .head-actions {
   display: flex; align-items: center; gap: 2px;
-  margin-left: 2px;
-  animation: headTrayIn .18s ease-out;
+  max-width: 0; opacity: 0; overflow: hidden;
+  transform: translateX(10px);
+  pointer-events: none;
+  transition: max-width .22s ease, opacity .18s ease, transform .22s ease, margin .22s ease;
+  margin-right: 0;
 }
-.head-actions[hidden] { display: none !important; }
-@keyframes headTrayIn {
-  from { opacity: 0; transform: translateX(12px); }
-  to { opacity: 1; transform: none; }
+body.head-menu-open .head-actions {
+  max-width: 120px; opacity: 1; transform: translateX(0);
+  pointer-events: auto; margin-right: 2px;
 }
-.menu-btn .menu-icon-close[hidden],
-.menu-btn .menu-icon-open[hidden] { display: none !important; }
+.menu-btn { position: relative; }
+.menu-glyph {
+  width: 18px; height: 14px; display: grid; place-items: center; position: relative;
+}
+.menu-bar {
+  position: absolute; left: 50%; width: 3px; height: 3px; border-radius: 50%;
+  background: currentColor; transform: translateX(-50%);
+  transition: top .18s ease, width .18s ease, height .18s ease, border-radius .18s ease, transform .18s ease;
+}
+.menu-bar-a { top: 1px; }
+.menu-bar-b { top: 5.5px; }
+.menu-bar-c { top: 10px; }
+/* Hover / open: dots stretch into hamburger lines */
+.head-menu:hover .menu-bar,
+body.head-menu-open .menu-bar {
+  width: 16px; height: 2px; border-radius: 1px;
+}
+.head-menu:hover .menu-bar-a,
+body.head-menu-open .menu-bar-a { top: 1px; }
+.head-menu:hover .menu-bar-b,
+body.head-menu-open .menu-bar-b { top: 6px; }
+.head-menu:hover .menu-bar-c,
+body.head-menu-open .menu-bar-c { top: 11px; }
 body.head-menu-open .menu-btn { color: var(--brand); background: var(--card-2); }
 .spacer { flex: 1; }
 .icon-btn { width: 32px; height: 32px; border: none; background: transparent; color: var(--text-2);

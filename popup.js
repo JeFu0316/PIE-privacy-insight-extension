@@ -508,25 +508,17 @@ const TOOLINGO_SITE_URL = null;
 function closeHeadMenu() {
   const actions = document.getElementById('head-actions');
   const menuBtn = document.getElementById('menu-btn');
-  const openIcon = menuBtn && menuBtn.querySelector('.menu-icon-open');
-  const closeIcon = menuBtn && menuBtn.querySelector('.menu-icon-close');
   document.body.classList.remove('head-menu-open');
-  if (actions) actions.hidden = true;
+  if (actions) actions.setAttribute('aria-hidden', 'true');
   if (menuBtn) menuBtn.setAttribute('aria-expanded', 'false');
-  if (openIcon) openIcon.hidden = false;
-  if (closeIcon) closeIcon.hidden = true;
 }
 
 function openHeadMenu() {
   const actions = document.getElementById('head-actions');
   const menuBtn = document.getElementById('menu-btn');
-  const openIcon = menuBtn && menuBtn.querySelector('.menu-icon-open');
-  const closeIcon = menuBtn && menuBtn.querySelector('.menu-icon-close');
   document.body.classList.add('head-menu-open');
-  if (actions) actions.hidden = false;
+  if (actions) actions.setAttribute('aria-hidden', 'false');
   if (menuBtn) menuBtn.setAttribute('aria-expanded', 'true');
-  if (openIcon) openIcon.hidden = true;
-  if (closeIcon) closeIcon.hidden = false;
 }
 
 function toggleHeadMenu() {
