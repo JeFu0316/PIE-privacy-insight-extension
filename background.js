@@ -11,9 +11,11 @@ async function refreshSettings() {
 // function is defined (see applyDnrRules definition below).
 const _settingsReady = refreshSettings();
 
-/* ---------- Toolbar icon: transparent glyph, swap for light/dark UI ----------
- * Chrome has no toolbar-color API. We watch prefers-color-scheme via an
- * offscreen document and set white ink on dark UI / dark ink on light UI.
+/* ---------- Toolbar icon: transparent glyph, light/dark variants ----------
+ * Chrome has no toolbar-color API, and Chrome's Appearance theme often does
+ * NOT match prefers-color-scheme. We therefore:
+ *   1) Default action icons to white glyphs (visible on dark Chrome).
+ *   2) Let Settings force light/dark lines, or Auto via prefers-color-scheme.
  * Store listing icons (manifest.icons) stay dark-on-transparent for light pages.
  */
 const ICONS_FOR_LIGHT_UI = {
@@ -29,10 +31,9 @@ const ICONS_FOR_DARK_UI = {
   128: 'toolingo128-darkui.png'
 };
 
-function applyToolbarIconScheme(scheme) {
-  const dark = scheme === 'dark';
+function applyToolbarIcon(useWhiteLines) {
   try {
-    chrome.action.setIcon({ path: dark ? ICONS_FOR_DARK_UI : ICONS_FOR_LIGHT_UI });
+    chrome.action.setIcon({ path: useWhiteLines ? ICONS_FOR_DARK_UI : ICONS_FOR_LIGHT_UI });
   } catch (_) {}
 }
 
@@ -42,39 +43,63 @@ async function ensureIconThemeOffscreen() {
       contextTypes: ['OFFSCREEN_DOCUMENT'],
       documentUrls: [chrome.runtime.getURL('offscreen-icon-theme.html')]
     });
-    if (contexts && contexts.length) return;
+    if (contexts && contexts.length) return true;
   } catch (_) {}
   try {
     await chrome.offscreen.createDocument({
       url: 'offscreen-icon-theme.html',
       reasons: ['MATCH_MEDIA_LISTENERS'],
-      justification: 'Detect light/dark color scheme so the toolbar icon stays visible.'
+      justification: 'Detect color scheme so Auto toolbar-icon mode can adapt.'
     });
+    return true;
   } catch (e) {
-    // Already open, or API unavailable — keep manifest default icons.
     const msg = String(e && e.message ? e.message : e);
-    if (msg.indexOf('Only a single offscreen') === -1 && msg.indexOf('already exists') === -1) {
-      // ignore
+    if (msg.indexOf('Only a single offscreen') !== -1 || msg.indexOf('already exists') !== -1) {
+      return true;
     }
+    return false;
   }
 }
 
-async function refreshToolbarIconFromScheme() {
-  await ensureIconThemeOffscreen();
-  try {
-    const resp = await chrome.runtime.sendMessage({ type: 'GET_COLOR_SCHEME' });
-    if (resp && resp.scheme) applyToolbarIconScheme(resp.scheme);
-  } catch (_) {}
+async function detectColorScheme() {
+  const ready = await ensureIconThemeOffscreen();
+  if (!ready) return null;
+  for (let i = 0; i < 5; i++) {
+    try {
+      const resp = await chrome.runtime.sendMessage({ type: 'GET_COLOR_SCHEME' });
+      if (resp && (resp.scheme === 'dark' || resp.scheme === 'light')) return resp.scheme;
+    } catch (_) {}
+    await new Promise((r) => setTimeout(r, 80));
+  }
+  return null;
 }
 
-_settingsReady.then(() => refreshToolbarIconFromScheme()).catch(() => {});
-chrome.runtime.onStartup.addListener(() => { refreshToolbarIconFromScheme(); });
-chrome.runtime.onInstalled.addListener(() => { refreshToolbarIconFromScheme(); });
+async function refreshToolbarIcon() {
+  const mode = (bgSettings && bgSettings.toolbarIcon) || 'light';
+  if (mode === 'light') {
+    applyToolbarIcon(true);   // white lines for dark toolbars
+    return;
+  }
+  if (mode === 'dark') {
+    applyToolbarIcon(false);  // dark lines for light toolbars
+    return;
+  }
+  // auto
+  const scheme = await detectColorScheme();
+  if (scheme === 'dark') applyToolbarIcon(true);
+  else if (scheme === 'light') applyToolbarIcon(false);
+  else applyToolbarIcon(true); // fail-safe: prefer visibility on dark Chrome
+}
+
+_settingsReady.then(() => refreshToolbarIcon()).catch(() => {});
+chrome.runtime.onStartup.addListener(() => { refreshToolbarIcon(); });
+chrome.runtime.onInstalled.addListener(() => { refreshToolbarIcon(); });
 
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area === 'sync' && changes[PIE_SETTINGS.STORAGE_KEY]) {
     const wasOn = bgSettings.thirdPartyNotifications;
     const wasBlocking = bgSettings.trackerBlock;
+    const wasIcon = bgSettings.toolbarIcon;
     bgSettings = PIE_SETTINGS.mergeWithDefaults(changes[PIE_SETTINGS.STORAGE_KEY].newValue);
     // Keep notification wording in sync with the chosen language.
     PIE_I18N.setLocale(bgSettings.language);
@@ -84,6 +109,7 @@ chrome.storage.onChanged.addListener((changes, area) => {
     refreshAllBadges();
     // Re-apply DNR rules when trackerBlock setting changes.
     if (wasBlocking !== bgSettings.trackerBlock) applyDnrRules();
+    if (wasIcon !== bgSettings.toolbarIcon) refreshToolbarIcon();
   }
 });
 
@@ -461,7 +487,10 @@ async function sweepTrackerCookies() {
 /* ---------- Popup messages ---------- */
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg && msg.type === 'ICON_COLOR_SCHEME' && msg.scheme) {
-    applyToolbarIconScheme(msg.scheme);
+    // Only Auto mode follows live scheme changes.
+    if ((bgSettings && bgSettings.toolbarIcon) === 'auto') {
+      applyToolbarIcon(msg.scheme === 'dark');
+    }
     return;
   }
   if (msg && msg.type === 'GET_NETWORK_LOG') {

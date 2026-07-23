@@ -295,7 +295,12 @@
       'settings.beta': "Beta features",
       'settings.betaEnable': "Enable beta features",
       'settings.betaHint': "Shows early or device-limited tools that may not work on every Chrome install. Off by default.",
-      'stats.fpSignals': "Fingerprint signals"
+      'stats.fpSignals': "Fingerprint signals",
+      'settings.toolbarIcon': "Toolbar icon",
+      'settings.toolbarIconHint': "Chrome's dark theme often ignores system color scheme. Use Light lines on a dark toolbar. Auto follows the OS color scheme only.",
+      'toolbarIcon.light': "Light lines",
+      'toolbarIcon.dark': "Dark lines",
+      'toolbarIcon.auto': "Auto"
     },
 
     zh_CN: {
@@ -567,7 +572,12 @@
       'settings.beta': "测试功能",
       'settings.betaEnable': "启用测试功能",
       'settings.betaHint': "显示尚不稳定或受设备限制的功能，可能无法在所有 Chrome 上使用。默认关闭。",
-      'stats.fpSignals': "指纹信号"
+      'stats.fpSignals': "指纹信号",
+      'settings.toolbarIcon': "工具栏图标",
+      'settings.toolbarIconHint': "Chrome 深色主题常常不跟随系统配色。深色工具栏请选“浅色线条”。自动仅跟随系统配色。",
+      'toolbarIcon.light': "浅色线条",
+      'toolbarIcon.dark': "深色线条",
+      'toolbarIcon.auto': "自动"
     },
 
     zh_TW: {
@@ -839,7 +849,12 @@
       'settings.beta': "測試功能",
       'settings.betaEnable': "啟用測試功能",
       'settings.betaHint': "顯示尚不穩定或受裝置限制的功能，可能無法在所有 Chrome 上使用。預設關閉。",
-      'stats.fpSignals': "指紋訊號"
+      'stats.fpSignals': "指紋訊號",
+      'settings.toolbarIcon': "工具列圖示",
+      'settings.toolbarIconHint': "Chrome 深色主題常常不跟隨系統配色。深色工具列請選「淺色線條」。自動僅跟隨系統配色。",
+      'toolbarIcon.light': "淺色線條",
+      'toolbarIcon.dark': "深色線條",
+      'toolbarIcon.auto': "自動"
     },
 
     ru: {
@@ -1110,7 +1125,12 @@
       'settings.beta': "Beta features",
       'settings.betaEnable': "Enable beta features",
       'settings.betaHint': "Shows early or device-limited tools that may not work on every Chrome install. Off by default.",
-      'stats.fpSignals': "Fingerprint signals"
+      'stats.fpSignals': "Fingerprint signals",
+      'settings.toolbarIcon': "Toolbar icon",
+      'settings.toolbarIconHint': "Chrome's dark theme often ignores system color scheme. Use Light lines on a dark toolbar. Auto follows the OS color scheme only.",
+      'toolbarIcon.light': "Light lines",
+      'toolbarIcon.dark': "Dark lines",
+      'toolbarIcon.auto': "Auto"
     },
 
     es: {
@@ -1381,7 +1401,12 @@
       'settings.beta': "Beta features",
       'settings.betaEnable': "Enable beta features",
       'settings.betaHint': "Shows early or device-limited tools that may not work on every Chrome install. Off by default.",
-      'stats.fpSignals': "Fingerprint signals"
+      'stats.fpSignals': "Fingerprint signals",
+      'settings.toolbarIcon': "Toolbar icon",
+      'settings.toolbarIconHint': "Chrome's dark theme often ignores system color scheme. Use Light lines on a dark toolbar. Auto follows the OS color scheme only.",
+      'toolbarIcon.light': "Light lines",
+      'toolbarIcon.dark': "Dark lines",
+      'toolbarIcon.auto': "Auto"
     },
 
     fr: {
@@ -1652,7 +1677,12 @@
       'settings.beta': "Beta features",
       'settings.betaEnable': "Enable beta features",
       'settings.betaHint': "Shows early or device-limited tools that may not work on every Chrome install. Off by default.",
-      'stats.fpSignals': "Fingerprint signals"
+      'stats.fpSignals': "Fingerprint signals",
+      'settings.toolbarIcon': "Toolbar icon",
+      'settings.toolbarIconHint': "Chrome's dark theme often ignores system color scheme. Use Light lines on a dark toolbar. Auto follows the OS color scheme only.",
+      'toolbarIcon.light': "Light lines",
+      'toolbarIcon.dark': "Dark lines",
+      'toolbarIcon.auto': "Auto"
     },
 
     de: {
@@ -1923,7 +1953,12 @@
       'settings.beta': "Beta features",
       'settings.betaEnable': "Enable beta features",
       'settings.betaHint': "Shows early or device-limited tools that may not work on every Chrome install. Off by default.",
-      'stats.fpSignals': "Fingerprint signals"
+      'stats.fpSignals': "Fingerprint signals",
+      'settings.toolbarIcon': "Toolbar icon",
+      'settings.toolbarIconHint': "Chrome's dark theme often ignores system color scheme. Use Light lines on a dark toolbar. Auto follows the OS color scheme only.",
+      'toolbarIcon.light': "Light lines",
+      'toolbarIcon.dark': "Dark lines",
+      'toolbarIcon.auto': "Auto"
     },
 
     pt_BR: {
@@ -2194,7 +2229,12 @@
       'settings.beta': "Beta features",
       'settings.betaEnable': "Enable beta features",
       'settings.betaHint': "Shows early or device-limited tools that may not work on every Chrome install. Off by default.",
-      'stats.fpSignals': "Fingerprint signals"
+      'stats.fpSignals': "Fingerprint signals",
+      'settings.toolbarIcon': "Toolbar icon",
+      'settings.toolbarIconHint': "Chrome's dark theme often ignores system color scheme. Use Light lines on a dark toolbar. Auto follows the OS color scheme only.",
+      'toolbarIcon.light': "Light lines",
+      'toolbarIcon.dark': "Dark lines",
+      'toolbarIcon.auto': "Auto"
     },
 
     ja: {
@@ -2465,7 +2505,12 @@
       'settings.beta': "Beta features",
       'settings.betaEnable': "Enable beta features",
       'settings.betaHint': "Shows early or device-limited tools that may not work on every Chrome install. Off by default.",
-      'stats.fpSignals': "Fingerprint signals"
+      'stats.fpSignals': "Fingerprint signals",
+      'settings.toolbarIcon': "Toolbar icon",
+      'settings.toolbarIconHint': "Chrome's dark theme often ignores system color scheme. Use Light lines on a dark toolbar. Auto follows the OS color scheme only.",
+      'toolbarIcon.light': "Light lines",
+      'toolbarIcon.dark': "Dark lines",
+      'toolbarIcon.auto': "Auto"
     },
 
     ko: {
@@ -2736,7 +2781,12 @@
       'settings.beta': "Beta features",
       'settings.betaEnable': "Enable beta features",
       'settings.betaHint': "Shows early or device-limited tools that may not work on every Chrome install. Off by default.",
-      'stats.fpSignals': "Fingerprint signals"
+      'stats.fpSignals': "Fingerprint signals",
+      'settings.toolbarIcon': "Toolbar icon",
+      'settings.toolbarIconHint': "Chrome's dark theme often ignores system color scheme. Use Light lines on a dark toolbar. Auto follows the OS color scheme only.",
+      'toolbarIcon.light': "Light lines",
+      'toolbarIcon.dark': "Dark lines",
+      'toolbarIcon.auto': "Auto"
     }
   };
 

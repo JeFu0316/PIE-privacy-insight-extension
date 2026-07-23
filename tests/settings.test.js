@@ -83,6 +83,10 @@ const { PIE_SETTINGS } = ctx;
   ok('aiExplainEnabled can enable', PIE_SETTINGS.mergeWithDefaults({ aiExplainEnabled: true }).aiExplainEnabled === true);
   ok('betaFeatures default off', PIE_SETTINGS.mergeWithDefaults(null).betaFeatures === false);
   ok('betaFeatures can enable', PIE_SETTINGS.mergeWithDefaults({ betaFeatures: true }).betaFeatures === true);
+  ok('toolbarIcon default light', PIE_SETTINGS.mergeWithDefaults(null).toolbarIcon === 'light');
+  ok('toolbarIcon dark kept', PIE_SETTINGS.mergeWithDefaults({ toolbarIcon: 'dark' }).toolbarIcon === 'dark');
+  ok('toolbarIcon auto kept', PIE_SETTINGS.mergeWithDefaults({ toolbarIcon: 'auto' }).toolbarIcon === 'auto');
+  ok('toolbarIcon invalid rejected', PIE_SETTINGS.mergeWithDefaults({ toolbarIcon: 'neon' }).toolbarIcon === 'light');
 
   ok('backgroundAnim default particles', PIE_SETTINGS.mergeWithDefaults(null).backgroundAnim === 'particles');
   ok('backgroundAnim valid kept', PIE_SETTINGS.mergeWithDefaults({ backgroundAnim: 'aurora' }).backgroundAnim === 'aurora');

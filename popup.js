@@ -1067,6 +1067,9 @@ async function saveFeatureSetting(partial) {
     syncSettingsCheckbox('set-beta', partial.betaFeatures);
     updateBetaItemsVisibility(partial.betaFeatures);
   }
+  if (Object.prototype.hasOwnProperty.call(partial, 'toolbarIcon')) {
+    syncToolbarIconControls(partial.toolbarIcon);
+  }
   if (Object.prototype.hasOwnProperty.call(partial, 'autoClean')) {
     syncSettingsCheckbox('set-autoclean', partial.autoClean);
   }
@@ -1751,6 +1754,12 @@ function syncBgAnimControls(anim) {
   });
 }
 
+function syncToolbarIconControls(mode) {
+  document.querySelectorAll('#set-toolbaricon [data-icon]').forEach((btn) => {
+    btn.classList.toggle('active', btn.dataset.icon === (mode || 'light'));
+  });
+}
+
 // Live-preview colours on `input`; persist (and lock in the custom theme) on
 // `change` to stay well under chrome.storage.sync write limits.
 function bindCustomEditor(initial) {
@@ -1829,6 +1838,7 @@ function bindSettingsControls(settings) {
   applyCustomVars(settings.customTheme);
   syncThemeControls(settings.theme);
   syncBgAnimControls(settings.backgroundAnim);
+  syncToolbarIconControls(settings.toolbarIcon);
 
   function setAllowlistMsg(text) {
     if (allowlistMsg) allowlistMsg.textContent = text || '';
@@ -1906,6 +1916,14 @@ function bindSettingsControls(settings) {
       syncBgAnimControls(anim);
       popupSettings = await PIE_SETTINGS.save({ backgroundAnim: anim });
       applyBackgroundFx();
+    });
+  });
+
+  document.querySelectorAll('#set-toolbaricon [data-icon]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const mode = btn.dataset.icon;
+      syncToolbarIconControls(mode);
+      await saveFeatureSetting({ toolbarIcon: mode });
     });
   });
 

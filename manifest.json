@@ -25,10 +25,10 @@
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
-      "16": "toolingo16.png",
-      "32": "toolingo32.png",
-      "48": "toolingo48.png",
-      "128": "toolingo128.png"
+      "16": "toolingo16-darkui.png",
+      "32": "toolingo32-darkui.png",
+      "48": "toolingo48-darkui.png",
+      "128": "toolingo128-darkui.png"
     }
   },
   "content_scripts": [

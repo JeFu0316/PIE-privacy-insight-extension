@@ -48,13 +48,19 @@
     // Phase 6: On-device AI explain (gated behind betaFeatures)
     aiExplainEnabled: false,
     // Unstable / early features — hidden until the user enables Beta features
-    betaFeatures: false
+    betaFeatures: false,
+    // Toolbar glyph: 'auto' follows prefers-color-scheme; 'light' = white lines
+    // (best on dark Chrome); 'dark' = dark lines (best on light Chrome).
+    // Default 'light' because Chrome's own dark theme often does NOT flip
+    // prefers-color-scheme, so Auto alone leaves black lines on a dark toolbar.
+    toolbarIcon: 'light'
   });
 
   const VALID = {
     theme: new Set(['system', 'light', 'dark', 'catppuccin', 'dracula', 'nord', 'colorblind', 'custom']),
     defaultTab: new Set(['overview', 'cookies', 'security', 'network']),
     backgroundAnim: new Set(['none', 'aurora', 'particles', 'shimmer']),
+    toolbarIcon: new Set(['auto', 'light', 'dark']),
     // 'auto' follows the browser locale; codes cover current + planned catalogs.
     language: new Set(['auto', 'en', 'zh_CN', 'zh_TW', 'ru', 'es', 'fr', 'de', 'pt_BR', 'ja', 'ko'])
   };
@@ -190,6 +196,9 @@
     }
     if (typeof raw.betaFeatures === 'boolean') {
       out.betaFeatures = raw.betaFeatures;
+    }
+    if (typeof raw.toolbarIcon === 'string' && VALID.toolbarIcon.has(raw.toolbarIcon)) {
+      out.toolbarIcon = raw.toolbarIcon;
     }
 
     out.schemaVersion = SCHEMA_VERSION;
