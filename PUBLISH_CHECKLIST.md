@@ -20,9 +20,10 @@ design choice (the Google DNS lookup) is worth removing under the new Aug 1 rule
 - **No remotely hosted code** — no `eval`, `new Function`, `import()`, or remote
   `<script src>`. `importScripts` loads only local files. (MV3 requires all logic to
   ship in the package.) ✓
-- **Two** optional external network calls (both off by default):
-  `https://dns.google/resolve` (site IP and optional PTR for your exit IP) and
-  `https://www.cloudflare.com/cdn-cgi/trace` (your public exit IP). See privacy policy.
+- **Three** external network calls:
+  - `https://dns.google/resolve` (site IP and optional PTR for your exit IP) — optional, off by default.
+  - `https://www.cloudflare.com/cdn-cgi/trace` (your public exit IP) — optional, off by default.
+  - `https://formspree.io/f/mrenarao` (user-submitted bug/feedback reports) — **user-initiated only**; sends topic, URL, details, extension version, and locale. No cookies, browsing history, or cookie values are transmitted. See privacy policy.
 - **All declared permissions are used** (cookies, tabs, webRequest, storage,
   notifications). ✓
 - **No `web_accessible_resources`** exposed to pages. ✓
@@ -35,11 +36,12 @@ design choice (the Google DNS lookup) is worth removing under the new Aug 1 rule
 ## MUST DO before publishing (blockers)
 
 1. **Post a privacy policy and link it in the dashboard.** Required because P.I.E
-   uses `cookies`, `tabs`, `webRequest`, and `<all_urls>`. It must disclose: cookies
+   uses `cookies`, `tabs`, `webRequest`, and `<all_urls>`. It    must disclose: cookies
    are read locally to detect PII and trackers; requests are observed locally; the
-   optional IP lookup sends the visited hostname to Google DNS; settings sync via
-   `chrome.storage.sync`; **no data is sent to you or any server you control, and
-   nothing is sold.**
+   optional IP lookup sends the visited hostname to Google DNS; user-submitted
+   feedback reports POST topic/url/details/version/locale to Formspree
+   (formspree.io) — user-initiated, no cookies or browsing history included;
+   settings sync via `chrome.storage.sync`; **no browsing data is sold.**
 2. **Complete the "Privacy practices" tab / data disclosures.** Declare the data
    categories handled, certify **Limited Use** compliance, and — per the July 2026
    update — **prominently disclose all data collection even if related to the single

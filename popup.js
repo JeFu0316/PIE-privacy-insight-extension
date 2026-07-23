@@ -580,22 +580,31 @@ async function submitReportForm() {
   const topic = topicEl ? topicEl.value : 'other';
   if (sendBtn) sendBtn.disabled = true;
   if (msg) msg.textContent = '';
+  let item;
   try {
-    await PIE_REPORTS.add({
+    item = await PIE_REPORTS.add({
       topic: topic,
       url: siteUrl,
       details: details,
       version: APP_VERSION,
       locale: (typeof PIE_I18N !== 'undefined' && PIE_I18N.getLocale()) || 'en'
     });
+  } catch (_) {
+    if (msg) msg.textContent = tr('report.saveError');
+    if (sendBtn) sendBtn.disabled = false;
+    return;
+  }
+  try {
+    await PIE_REPORTS.submitRemote(item);
     if (detailsEl) detailsEl.value = '';
     if (urlEl) urlEl.value = '';
     closeReportPanel();
     showToast(tr('report.thanks'));
   } catch (_) {
-    if (msg) msg.textContent = tr('report.saveError');
+    if (msg) msg.textContent = tr('report.sendError');
+  } finally {
+    if (sendBtn) sendBtn.disabled = false;
   }
-  if (sendBtn) sendBtn.disabled = false;
 }
 
 function openFeedbackReport() {

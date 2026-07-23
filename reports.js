@@ -1,5 +1,5 @@
 /*
- * On-device user report inbox (no upload). Future: sync to a Toolingo backend.
+ * On-device user report inbox + optional remote submit to Toolingo support via Formspree.
  */
 (function (root) {
   'use strict';
@@ -64,12 +64,31 @@
     } catch (_) {}
   }
 
+  const FORMSPREE_ENDPOINT = 'https://formspree.io/f/mrenarao';
+
+  async function submitRemote(item) {
+    const res = await fetch(FORMSPREE_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({
+        topic: item.topic,
+        url: item.url,
+        details: item.details || '(none)',
+        version: item.version,
+        locale: item.locale,
+        _subject: 'Toolingo report: ' + item.topic
+      })
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+  }
+
   root.PIE_REPORTS = {
     STORAGE_KEY: STORAGE_KEY,
     MAX_REPORTS: MAX_REPORTS,
     setStorageApi: setStorageApi,
     list: list,
     add: add,
-    clear: clear
+    clear: clear,
+    submitRemote: submitRemote
   };
 })(typeof globalThis !== 'undefined' ? globalThis : self);
