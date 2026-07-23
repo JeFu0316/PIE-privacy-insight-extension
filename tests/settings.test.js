@@ -9,7 +9,9 @@ const repoRoot = path.join(__dirname, '..');
 const settingsSrc = fs.readFileSync(path.join(repoRoot, 'settings.js'), 'utf8');
 
 let stored = {};
-const ctx = { chrome: {
+const ctx = {
+  URL,
+  chrome: {
   storage: {
     sync: {
       get: async (key) => ({ [key]: stored[key] }),
@@ -46,6 +48,19 @@ const { PIE_SETTINGS } = ctx;
   ok('autoCleanAllowlist default empty array', Array.isArray(PIE_SETTINGS.mergeWithDefaults(null).autoCleanAllowlist) && PIE_SETTINGS.mergeWithDefaults(null).autoCleanAllowlist.length === 0);
   ok('autoCleanAllowlist keeps string entries', (() => { const a = PIE_SETTINGS.mergeWithDefaults({ autoCleanAllowlist: ['example.com', 5, '', 'foo.org'] }).autoCleanAllowlist; return a.length === 2 && a[0] === 'example.com' && a[1] === 'foo.org'; })());
   ok('autoCleanAllowlist ignores non-array', Array.isArray(PIE_SETTINGS.mergeWithDefaults({ autoCleanAllowlist: 'nope' }).autoCleanAllowlist) && PIE_SETTINGS.mergeWithDefaults({ autoCleanAllowlist: 'nope' }).autoCleanAllowlist.length === 0);
+  ok('normalize bare host', PIE_SETTINGS.normalizeAllowlistEntry('DoubleClick.net') === 'doubleclick.net');
+  ok('normalize www host to base', PIE_SETTINGS.normalizeAllowlistEntry('www.google-analytics.com') === 'google-analytics.com');
+  ok('normalize URL to base', PIE_SETTINGS.normalizeAllowlistEntry('https://sub.tracker.example.com/path?x=1') === 'example.com');
+  ok('normalize co.uk base', PIE_SETTINGS.normalizeAllowlistEntry('https://ads.foo.co.uk/x') === 'foo.co.uk');
+  ok('normalize rejects junk', PIE_SETTINGS.normalizeAllowlistEntry('not a domain') === '' && PIE_SETTINGS.normalizeAllowlistEntry('') === '' && PIE_SETTINGS.normalizeAllowlistEntry('localhost') === '');
+  ok('sanitizeAllowlist dedupes', (() => {
+    const a = PIE_SETTINGS.sanitizeAllowlist(['https://www.example.com/a', 'example.com', 'EXAMPLE.com', 'bad']);
+    return a.length === 1 && a[0] === 'example.com';
+  })());
+  ok('merge normalizes allowlist', (() => {
+    const a = PIE_SETTINGS.mergeWithDefaults({ autoCleanAllowlist: ['https://www.ads.google.com/x', 'ads.google.com'] }).autoCleanAllowlist;
+    return a.length === 1 && a[0] === 'google.com';
+  })());
   ok('extended theme custom kept', PIE_SETTINGS.mergeWithDefaults({ theme: 'custom' }).theme === 'custom');
 
   ok('language default auto', PIE_SETTINGS.mergeWithDefaults(null).language === 'auto');
@@ -54,6 +69,9 @@ const { PIE_SETTINGS } = ctx;
   ok('language invalid rejected', PIE_SETTINGS.mergeWithDefaults({ language: 'klingon' }).language === 'auto');
   ok('myIpLookupEnabled default off', PIE_SETTINGS.mergeWithDefaults(null).myIpLookupEnabled === false);
   ok('myIpLookupEnabled can enable', PIE_SETTINGS.mergeWithDefaults({ myIpLookupEnabled: true }).myIpLookupEnabled === true);
+  ok('weeklyDigestEnabled default on', PIE_SETTINGS.mergeWithDefaults(null).weeklyDigestEnabled === true);
+  ok('weeklyDigestEnabled can disable', PIE_SETTINGS.mergeWithDefaults({ weeklyDigestEnabled: false }).weeklyDigestEnabled === false);
+  ok('weeklyDigestEnabled ignores non-boolean', PIE_SETTINGS.mergeWithDefaults({ weeklyDigestEnabled: 'no' }).weeklyDigestEnabled === true);
 
   ok('backgroundAnim default aurora', PIE_SETTINGS.mergeWithDefaults(null).backgroundAnim === 'aurora');
   ok('backgroundAnim valid kept', PIE_SETTINGS.mergeWithDefaults({ backgroundAnim: 'particles' }).backgroundAnim === 'particles');

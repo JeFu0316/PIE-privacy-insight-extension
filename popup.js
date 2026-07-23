@@ -12,7 +12,7 @@ let popupSettings = null;
 let myIpInfo = null;   // { ip, loc, colo, warp, ptr, kind } when my-IP lookup is on
 const thirdPartyHits = new Set();   // third-party domains seen via network (background.js)
 
-const APP_VERSION = '2.0.2';
+const APP_VERSION = '2.1.0';
 
 // i18n shorthands. Defensive so the engine still loads in the headless test
 // sandbox (where PIE_I18N isn't present) — there they resolve to the key.
@@ -409,6 +409,7 @@ function renderOverview() {
     track.knownTrackers > 0 ? trn('overview.trackers', track.knownTrackers) : tr('overview.noneKnown')));
 
   renderOverviewMyIp();
+  renderOverviewDigest();
 
   const stats = document.getElementById('ov-stats');
   stats.innerHTML = '';
@@ -462,6 +463,42 @@ function renderOverviewMyIp() {
   const bits = [exitKindLabel(myIpInfo.kind)];
   if (myIpInfo.loc) bits.push(tr('myip.loc', { loc: myIpInfo.loc }));
   box.appendChild(el('div', 'ov-ip-meta', bits.join(' · ')));
+}
+
+async function renderOverviewDigest() {
+  const box = document.getElementById('ov-digest');
+  if (!box) return;
+  box.innerHTML = '';
+  if (!popupSettings || !popupSettings.weeklyDigestEnabled || typeof PIE_DIGEST === 'undefined') {
+    box.hidden = true;
+    return;
+  }
+  box.hidden = false;
+  box.appendChild(el('div', 'ov-digest-title', tr('digest.title')));
+  let snap;
+  try {
+    snap = await PIE_DIGEST.snapshot();
+  } catch (_) {
+    snap = null;
+  }
+  if (!snap || (snap.trackerEvents === 0 && snap.cookiesCleaned === 0)) {
+    box.appendChild(el('div', 'ov-digest-empty', tr('digest.empty')));
+    return;
+  }
+  const row = el('div', 'ov-digest-stats');
+  row.appendChild(statTile('a', ICO.track, snap.trackerEvents, tr('digest.trackers')));
+  row.appendChild(statTile('g', ICO.check, snap.cookiesCleaned, tr('digest.cleaned')));
+  box.appendChild(row);
+  if (snap.topTrackers && snap.topTrackers.length) {
+    box.appendChild(el('div', 'ov-digest-top-label', tr('digest.top')));
+    const list = el('ul', 'ov-digest-top');
+    snap.topTrackers.forEach((item) => {
+      const li = document.createElement('li');
+      li.textContent = item.domain + ' · ' + item.count;
+      list.appendChild(li);
+    });
+    box.appendChild(list);
+  }
 }
 
 const FEEDBACK_EMAIL = 'jeffreyk348@gmail.com';
@@ -1107,8 +1144,14 @@ function bindSettingsControls(settings) {
   const bannerEl = document.getElementById('set-bannerhide');
   const badgeEl = document.getElementById('set-badge');
   const autoCleanEl = document.getElementById('set-autoclean');
+  const digestEl = document.getElementById('set-digest');
   const cleanNowBtn = document.getElementById('clean-now');
   const cleanResult = document.getElementById('clean-result');
+  const allowlistInput = document.getElementById('allowlist-input');
+  const allowlistAdd = document.getElementById('allowlist-add');
+  const allowlistAddSite = document.getElementById('allowlist-add-site');
+  const allowlistList = document.getElementById('allowlist-list');
+  const allowlistMsg = document.getElementById('allowlist-msg');
   if (notifEl) notifEl.checked = settings.thirdPartyNotifications;
   if (ipEl) ipEl.checked = settings.ipLookupEnabled;
   if (myIpEl) myIpEl.checked = settings.myIpLookupEnabled;
@@ -1117,9 +1160,74 @@ function bindSettingsControls(settings) {
   if (bannerEl) bannerEl.checked = settings.bannerAutoHide;
   if (badgeEl) badgeEl.checked = settings.trackerBadge;
   if (autoCleanEl) autoCleanEl.checked = settings.autoClean;
+  if (digestEl) digestEl.checked = settings.weeklyDigestEnabled !== false;
   applyCustomVars(settings.customTheme);
   syncThemeControls(settings.theme);
   syncBgAnimControls(settings.backgroundAnim);
+
+  function setAllowlistMsg(text) {
+    if (allowlistMsg) allowlistMsg.textContent = text || '';
+  }
+
+  function renderAllowlist(list) {
+    if (!allowlistList) return;
+    const domains = Array.isArray(list) ? list : [];
+    allowlistList.innerHTML = '';
+    if (!domains.length) {
+      const empty = document.createElement('li');
+      empty.className = 'allowlist-empty';
+      empty.textContent = tr('settings.allowlistEmpty');
+      allowlistList.appendChild(empty);
+      allowlistList.classList.add('is-empty');
+      return;
+    }
+    allowlistList.classList.remove('is-empty');
+    domains.forEach((domain) => {
+      const li = document.createElement('li');
+      li.className = 'allowlist-item';
+      const span = document.createElement('span');
+      span.textContent = domain;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'allowlist-remove';
+      btn.textContent = tr('settings.allowlistRemove');
+      btn.setAttribute('aria-label', tr('settings.allowlistRemove') + ': ' + domain);
+      btn.addEventListener('click', async () => {
+        const next = (popupSettings.autoCleanAllowlist || []).filter((d) => d !== domain);
+        popupSettings = await PIE_SETTINGS.save({ autoCleanAllowlist: next });
+        setAllowlistMsg('');
+        renderAllowlist(popupSettings.autoCleanAllowlist);
+      });
+      li.appendChild(span);
+      li.appendChild(btn);
+      allowlistList.appendChild(li);
+    });
+  }
+
+  async function addAllowlistDomain(raw) {
+    const domain = PIE_SETTINGS.normalizeAllowlistEntry(raw);
+    if (!domain) {
+      setAllowlistMsg(tr('settings.allowlistInvalid'));
+      return;
+    }
+    const cur = popupSettings.autoCleanAllowlist || [];
+    if (cur.indexOf(domain) !== -1) {
+      setAllowlistMsg('');
+      if (allowlistInput) allowlistInput.value = '';
+      renderAllowlist(cur);
+      return;
+    }
+    popupSettings = await PIE_SETTINGS.save({ autoCleanAllowlist: cur.concat([domain]) });
+    if (allowlistInput) allowlistInput.value = '';
+    setAllowlistMsg('');
+    renderAllowlist(popupSettings.autoCleanAllowlist);
+  }
+
+  renderAllowlist(settings.autoCleanAllowlist);
+  if (allowlistAddSite) {
+    allowlistAddSite.disabled = !currentSiteHost;
+    allowlistAddSite.title = currentSiteHost || '';
+  }
 
   document.querySelectorAll('#set-theme [data-theme]').forEach((btn) => {
     btn.addEventListener('click', () => setTheme(btn.dataset.theme));
@@ -1192,6 +1300,36 @@ function bindSettingsControls(settings) {
   if (autoCleanEl) {
     autoCleanEl.addEventListener('change', async () => {
       popupSettings = await PIE_SETTINGS.save({ autoClean: autoCleanEl.checked });
+    });
+  }
+
+  if (digestEl) {
+    digestEl.addEventListener('change', async () => {
+      popupSettings = await PIE_SETTINGS.save({ weeklyDigestEnabled: digestEl.checked });
+      renderOverviewDigest();
+    });
+  }
+
+  if (allowlistAdd) {
+    allowlistAdd.addEventListener('click', () => {
+      addAllowlistDomain(allowlistInput ? allowlistInput.value : '');
+    });
+  }
+  if (allowlistInput) {
+    allowlistInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        addAllowlistDomain(allowlistInput.value);
+      }
+    });
+  }
+  if (allowlistAddSite) {
+    allowlistAddSite.addEventListener('click', () => {
+      if (!currentSiteHost) {
+        setAllowlistMsg(tr('settings.allowlistInvalid'));
+        return;
+      }
+      addAllowlistDomain(currentSiteHost);
     });
   }
 

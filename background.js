@@ -1,4 +1,4 @@
-importScripts('settings.js', 'i18n.js', 'tracker-domains.js');
+importScripts('settings.js', 'i18n.js', 'tracker-domains.js', 'digest.js');
 
 let bgSettings = PIE_SETTINGS.DEFAULTS;
 
@@ -130,7 +130,7 @@ chrome.webRequest.onHeadersReceived.addListener(
         st.notifId = 'pie-3p-' + tabId + '-' + Date.now();
         chrome.notifications.create(st.notifId, {
           type: 'basic',
-          iconUrl: 'pie128.png',
+          iconUrl: 'toolingo128.png',
           title: PIE_I18N.t('notif.title'),
           message: message,
           priority: 0
@@ -214,7 +214,13 @@ chrome.webRequest.onBeforeRequest.addListener(
       if (tracker && reqHost) {
         let ts = tabTrackers.get(tabId);
         if (!ts) { ts = new Set(); tabTrackers.set(tabId, ts); }
-        if (!ts.has(reqHost)) { ts.add(reqHost); updateBadge(tabId); }
+        if (!ts.has(reqHost)) {
+          ts.add(reqHost);
+          updateBadge(tabId);
+          if (bgSettings.weeklyDigestEnabled && typeof PIE_DIGEST !== 'undefined') {
+            try { PIE_DIGEST.recordTracker(reqHost); } catch (_) {}
+          }
+        }
       }
 
       if (!bgSettings.networkMonitoring) return;   // network log is gated; badge is not
@@ -304,6 +310,9 @@ async function sweepTrackerCookies() {
       } catch (_) {}
     }
   } catch (_) {}
+  if (removed > 0 && bgSettings.weeklyDigestEnabled && typeof PIE_DIGEST !== 'undefined') {
+    try { PIE_DIGEST.recordCleaned(removed); } catch (_) {}
+  }
   return removed;
 }
 

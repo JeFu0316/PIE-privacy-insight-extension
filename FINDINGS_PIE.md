@@ -186,4 +186,42 @@ Each phase ends with a review pass and a check-in before the next begins.
   → **Shipped best-effort hide (opt-in, off by default).**
 - IP/DNS lookup: ~~keep (disclosed), make optional, or remove?~~
   → **Kept, off by default; disclose in privacy policy.**
-- Version bump target: ~~is this a 3.0?~~ → **2.0.2.**
+- Version bump target: ~~is this a 3.0?~~ → **2.0.2** (pending CWS). Next store ship after 2.0.2 is live: **2.1.0 Toolingo**.
+
+---
+
+## Toolingo brand (Phase 1) — DONE
+
+**Decision:** Public brand is **Toolingo**; subtitle **Privacy Insight**. Same single
+Chrome Web Store purpose (cookies / third-party tracking / connection security) —
+not a multi-purpose toolbox. Keep “P.I.E” only as legacy/engine shorthand in docs
+if useful; store-facing name is Toolingo.
+
+**Shipped in code for 2.1.0 (do not amend the pending 2.0.2 package):**
+- `manifest.json` name `Toolingo - Privacy Insight`, version `2.1.0`
+- Popup hero + footer + feedback mailto templates via i18n
+- Privacy policy at https://jefu0316.github.io/Index.html/ retitled for Toolingo
+- Toolingo mark shipped: popup logo uses CSS mask (`toolingo-mark.png`) tinted with
+  `--logo` → `--text` so it stays high-contrast across themes; toolbar/store icons
+  are branded purple tiles (`toolingo16/32/128.png`)
+
+**Single-purpose rule (unchanged):** Give users insight into a site’s cookie usage,
+third-party tracking, and connection security. No “all-in-one tools suite” store copy.
+
+### Phase 2 candidates (Toolingo Privacy — after 2.1.0 brand is live)
+Still purpose-aligned; build one-by-one with an explicit go each time:
+- **Allowlist UI** for Auto-Clean (`autoCleanAllowlist`) — **DONE (Phase 2a)**
+- **Weekly privacy digest** (on-device summary; no external upload) — **DONE (Phase 2b)**
+- **Optional DNR tracker block** (`declarativeNetRequest` — new permission; deferred until Auto-Clean proves itself)
+- Out of scope as core product: ad-block suite, password manager, malware AV, VPN
+
+### Phase 2a — Auto-Clean allowlist UI — DONE
+Settings editor for `autoCleanAllowlist`: add/remove domains, “Add this site,” domain
+normalize on save (same base-domain rules as Auto-Clean) so entries like
+`www.tracker.com` / `https://sub.tracker.com/x` match the sweeper. No new permissions.
+
+### Phase 2b — Weekly privacy digest — DONE
+On-device weekly aggregates in `chrome.storage.local` (`digest.js`): known-tracker
+contact counts, top known-tracker base domains, cookies cleaned by Auto-Clean /
+Clean now. Shown on Overview when `weeklyDigestEnabled` (default on). No first-party
+browsing hosts stored; no `alarms` permission (week rolls on read/write); nothing uploaded.

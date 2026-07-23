@@ -3,18 +3,18 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>P.I.E (Privacy Insight Extension)</title>
+    <title>Toolingo — Privacy Insight</title>
     <link rel="stylesheet" href="popup.css" />
   </head>
   <body>
     <div class="bg-fx" id="bg-fx" aria-hidden="true"></div>
     <div class="head">
       <div class="logo" aria-hidden="true">
-        <img src="pie128.png" alt="" width="30" height="30" />
+        <span class="logo-mark"></span>
       </div>
       <div>
-        <div class="brand-name">P.I.E</div>
-        <div class="brand-sub" data-i18n="app.tagline">Privacy Insight Extension</div>
+        <div class="brand-name">Toolingo</div>
+        <div class="brand-sub" data-i18n="app.tagline">Privacy Insight</div>
       </div>
       <div class="spacer"></div>
       <button class="theme-toggle" id="theme-btn" data-i18n-label="header.switchTheme" aria-label="Switch theme">
@@ -44,6 +44,7 @@
     <div class="body">
       <section class="panel active" id="tab-overview" role="tabpanel">
         <div class="rings" id="ov-rings"></div>
+        <div class="ov-digest" id="ov-digest" hidden></div>
         <div class="ov-myip" id="ov-myip" hidden></div>
         <div class="stats" id="ov-stats"></div>
         <div class="hint" id="ov-hint"></div>
@@ -64,7 +65,7 @@
     </div>
 
     <div class="foot">
-      <span id="foot-status">P.I.E 2.0.2 · on-device</span>
+      <span id="foot-status">Toolingo 2.1.0 · on-device</span>
       <button type="button" class="foot-link" id="foot-report" data-i18n="foot.report">Report</button>
     </div>
     </div>
@@ -173,6 +174,24 @@
             </span>
             <span class="set-hint" data-i18n="settings.autoCleanHint">Automatically removes cookies from known tracker &amp; ad domains when you close tabs. First-party and login cookies are never touched.</span>
           </label>
+          <div class="set-allowlist" id="set-allowlist">
+            <div class="set-row-text" data-i18n="settings.allowlist">Auto-clean allowlist</div>
+            <span class="set-hint" data-i18n="settings.allowlistHint">Tracker domains listed here are never cleaned. Enter a domain (e.g. doubleclick.net).</span>
+            <div class="allowlist-add">
+              <input type="text" class="allowlist-input" id="allowlist-input" data-i18n-placeholder="settings.allowlistPlaceholder" placeholder="example.com" autocomplete="off" spellcheck="false" />
+              <button type="button" class="set-action allowlist-btn" id="allowlist-add" data-i18n="settings.allowlistAdd">Add</button>
+            </div>
+            <button type="button" class="set-action allowlist-site-btn" id="allowlist-add-site" data-i18n="settings.allowlistAddSite">Add this site</button>
+            <ul class="allowlist-list" id="allowlist-list" aria-live="polite"></ul>
+            <div class="set-action-result" id="allowlist-msg" role="status"></div>
+          </div>
+          <label class="set-row set-row-col">
+            <span class="set-row-top">
+              <span class="set-row-text" data-i18n="settings.weeklyDigest">Weekly privacy digest</span>
+              <input type="checkbox" class="toggle" id="set-digest" />
+            </span>
+            <span class="set-hint" data-i18n="settings.weeklyDigestHint">Shows on-device weekly totals for known tracker contacts and cleaned cookies on Overview. No browsing history is stored.</span>
+          </label>
           <button type="button" class="set-action" id="clean-now" data-i18n="settings.cleanNow">Clean tracker cookies now</button>
           <div class="set-action-result" id="clean-result" role="status"></div>
         </div>
@@ -187,6 +206,7 @@
 
     <script src="cookie-database.js"></script>
     <script src="exit-ip.js"></script>
+    <script src="digest.js"></script>
     <script src="i18n.js"></script>
     <script src="settings.js"></script>
     <script src="popup.js"></script>

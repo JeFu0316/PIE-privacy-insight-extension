@@ -77,10 +77,10 @@ design choice (the Google DNS lookup) is worth removing under the new Aug 1 rule
 - ~~Delete the stray `err.tmp` from the folder.~~ **Done.**
 - **Package only runtime files.** Include: `manifest.json`, `background.js`,
   `content_script.js`, `popup.html/css/js`, `settings.js`, `i18n.js`, `exit-ip.js`,
-  `cookie-database.js`, `tracker-domains.js`, `COOKIE_DB_LICENSE.txt`,
-  `pie16/32/128.png`. **Exclude:** `.git/`, `.claude/`, `CLAUDE.md`, `FINDINGS_PIE.md`,
-  `README.md`, `PUBLISH_CHECKLIST.md`, `prototype/`, `tests/`, `dist/`, `err.tmp`,
-  `_privacy-site/`.
+  `digest.js`, `cookie-database.js`, `tracker-domains.js`, `COOKIE_DB_LICENSE.txt`,
+  `toolingo-mark.png`, `toolingo16/32/128.png`. **Exclude:** `.git/`, `.claude/`,
+  `CLAUDE.md`, `FINDINGS_PIE.md`, `README.md`, `PUBLISH_CHECKLIST.md`, `prototype/`,
+  `tests/`, `dist/`, `err.tmp`, `_privacy-site/`, legacy `pie16/32/128.png` (optional keep).
 - ~~Icons: the manifest maps size `48` to `pie32.png` (a 32px image).~~ **Partly done:**
   the 48px slot now downscales from `pie128.png` (sharper than upscaling the 32px), a
   `32` mapping was added, and a top-level `"icons"` field now mirrors
@@ -93,7 +93,26 @@ design choice (the Google DNS lookup) is worth removing under the new Aug 1 rule
   auto-hide (`bannerAutoHide`, off by default) in `content_script.js`; not full
   blocking. Add a content-script justification to the dashboard: "Optionally hides
   detected cookie-consent banners with CSS at the user's request."
-- **Version:** **2.0.2** (set in `manifest.json` and the popup footer).
+- **Version:** **2.0.2** (pending CWS review — leave that package unchanged).
+
+---
+
+## Next package: 2.1.0 Toolingo (after 2.0.2 is live)
+
+- **Do not** re-upload Toolingo branding into the pending 2.0.2 review package.
+- When 2.0.2 is approved/live, submit **2.1.0** as the store rename + brand foundation:
+  - Manifest name: `Toolingo - Privacy Insight`
+  - Popup / i18n / footer / feedback strings: Toolingo + Privacy Insight subtitle
+  - Privacy policy URL unchanged: https://jefu0316.github.io/Index.html/ (already Toolingo)
+- Rebuild zip: `dist/pie-2.1.0.zip` with the **same runtime set** as 2.0.2 plus
+  `digest.js`:
+  `manifest.json`, `background.js`, `content_script.js`, `popup.html/css/js`,
+  `settings.js`, `i18n.js`, `exit-ip.js`, `digest.js`, `cookie-database.js`,
+  `tracker-domains.js`, `COOKIE_DB_LICENSE.txt`, `toolingo-mark.png`,
+  `toolingo16.png`, `toolingo32.png`, `toolingo128.png`.
+- Refresh store screenshots / promo tiles with the Toolingo wordmark so listing art
+  matches the popup (Canva after code rename).
+- Single purpose copy unchanged — no toolbox claims.
 
 ---
 
@@ -104,8 +123,7 @@ design choice (the Google DNS lookup) is worth removing under the new Aug 1 rule
 - Category (Privacy & Security or Tools); detailed description that matches the single
   purpose (no keyword stuffing).
 - Privacy-practices form + privacy-policy URL (blockers #1–#4 above).
-- Version `2.0.1` is a valid increment over the live `2.0`. (It's a large redesign — a
-  bump to `3.0` would signal that better, but it isn't required.)
+- Version `2.0.2` pending; next increment after live is **`2.1.0` (Toolingo)**.
 - Because of `<all_urls>` + `webRequest`, expect an **in-depth review** (longer
   approval time). That's normal, not a rejection.
 - For a true beta, consider publishing **Unlisted** or to a **trusted-testers** group
