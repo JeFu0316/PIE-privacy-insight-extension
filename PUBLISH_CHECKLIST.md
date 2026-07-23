@@ -77,12 +77,13 @@ design choice (the Google DNS lookup) is worth removing under the new Aug 1 rule
 - ~~Delete the stray `err.tmp` from the folder.~~ **Done.**
 - **Package only runtime files.** Include: `manifest.json`, `background.js`,
   `content_script.js`, `popup.html/css/js`, `settings.js`, `i18n.js`, `exit-ip.js`,
-  `digest.js`, `cookie-database.js`, `tracker-domains.js`, `COOKIE_DB_LICENSE.txt`,
-  `toolingo-mark.png`, `toolingo16/32/128.png`. **Exclude:** `.git/`, `.claude/`,
-  `CLAUDE.md`, `FINDINGS_PIE.md`, `README.md`, `PUBLISH_CHECKLIST.md`, `prototype/`,
-  `tests/`, `dist/`, `err.tmp`, legacy `pie16/32/128.png` (optional keep). Keep the
-  privacy-policy clone at `C:\PIE-privacy-site` (outside the extension root — Chrome
-  rejects `_`-prefixed folder names on Load unpacked).
+  `digest.js`, `reports.js`, `cookie-database.js`, `tracker-domains.js`,
+  `COOKIE_DB_LICENSE.txt`, `toolingo-mark.png`, `toolingo16/32/128.png`. **Exclude:**
+  `.git/`, `.claude/`, `CLAUDE.md`, `FINDINGS_PIE.md`, `README.md`,
+  `PUBLISH_CHECKLIST.md`, `prototype/`, `tests/`, `dist/`, `err.tmp`, legacy
+  `pie16/32/128.png` (optional keep). Keep the privacy-policy clone at
+  `C:\PIE-privacy-site` (outside the extension root — Chrome rejects `_`-prefixed
+  folder names on Load unpacked).
 - ~~Icons: the manifest maps size `48` to `pie32.png` (a 32px image).~~ **Partly done:**
   the 48px slot now downscales from `pie128.png` (sharper than upscaling the 32px), a
   `32` mapping was added, and a top-level `"icons"` field now mirrors
@@ -106,12 +107,11 @@ design choice (the Google DNS lookup) is worth removing under the new Aug 1 rule
   - Manifest name: `Toolingo - Privacy Insight`
   - Popup / i18n / footer / feedback strings: Toolingo + Privacy Insight subtitle
   - Privacy policy URL unchanged: https://jefu0316.github.io/Index.html/ (already Toolingo)
-- Rebuild zip: `dist/pie-2.1.0.zip` with the **same runtime set** as 2.0.2 plus
-  `digest.js`:
+- Rebuild zip: `dist/pie-2.1.0.zip` with the full runtime set:
   `manifest.json`, `background.js`, `content_script.js`, `popup.html/css/js`,
-  `settings.js`, `i18n.js`, `exit-ip.js`, `digest.js`, `cookie-database.js`,
-  `tracker-domains.js`, `COOKIE_DB_LICENSE.txt`, `toolingo-mark.png`,
-  `toolingo16.png`, `toolingo32.png`, `toolingo128.png`.
+  `settings.js`, `i18n.js`, `exit-ip.js`, `digest.js`, `reports.js`,
+  `cookie-database.js`, `tracker-domains.js`, `COOKIE_DB_LICENSE.txt`,
+  `toolingo-mark.png`, `toolingo16.png`, `toolingo32.png`, `toolingo128.png`.
 - Refresh store screenshots / promo tiles with the Toolingo wordmark so listing art
   matches the popup (Canva after code rename).
 - Single purpose copy unchanged — no toolbox claims.

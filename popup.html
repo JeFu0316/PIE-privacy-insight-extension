@@ -212,10 +212,25 @@
         </div>
         <div class="set-section">
           <div class="set-label" data-i18n="settings.feedback">Help &amp; feedback</div>
-          <p class="set-hint" style="margin:0 2px 10px;" data-i18n="settings.feedbackHint">Report a bug or send an idea with the in-app form. Nothing is sent until you tap Send, and no cookies or browsing data are attached automatically.</p>
+          <p class="set-hint" style="margin:0 2px 10px;" data-i18n="settings.feedbackHint">Report a bug or send an idea with the in-app form. Reports are saved on your device until a Toolingo server is available — nothing is emailed automatically.</p>
           <button type="button" class="set-action" id="report-btn" data-i18n="settings.reportBug">Report a bug / feedback</button>
+          <button type="button" class="set-action" id="reports-inbox-btn" style="margin-top:8px;" data-i18n="reports.openInbox">View submitted reports</button>
         </div>
         <p class="set-footnote"><button type="button" class="foot-link" id="settings-tc-link" data-i18n="tc.openLink">Terms &amp; clarity</button></p>
+      </div>
+    </div>
+
+    <div class="reports-panel" id="reports-panel" hidden>
+      <div class="settings-head">
+        <button class="icon-btn" id="reports-back" data-i18n-label="settings.back" data-i18n-title="settings.back" aria-label="Back" title="Back">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <div class="settings-title" data-i18n="reports.title">Submitted reports</div>
+      </div>
+      <div class="reports-body">
+        <p class="set-hint" style="margin:0 2px 10px;" data-i18n="reports.hint">Saved on this device only. A future Toolingo update can sync these to support when you choose.</p>
+        <div id="reports-list"></div>
+        <button type="button" class="set-action" id="reports-clear" style="margin-top:10px;" data-i18n="reports.clear">Clear all</button>
       </div>
     </div>
 
@@ -283,9 +298,12 @@
       </div>
     </div>
 
+    <div class="toast" id="toast" hidden role="status" aria-live="polite"></div>
+
     <script src="cookie-database.js"></script>
     <script src="exit-ip.js"></script>
     <script src="digest.js"></script>
+    <script src="reports.js"></script>
     <script src="i18n.js"></script>
     <script src="settings.js"></script>
     <script src="popup.js"></script>

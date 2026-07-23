@@ -593,13 +593,48 @@ html.reduce-motion .bg-fx { display: none; }
 .tc-panel { display: flex; flex-direction: column; max-height: 520px; }
 .tc-panel[hidden] { display: none !important; }
 body.tc-open #main-view,
-body.tc-open .settings-panel { display: none; }
+body.tc-open .settings-panel,
+body.tc-open .reports-panel { display: none; }
 .tc-body { padding: 0 14px 16px; overflow-y: auto; flex: 1; }
 .tc-block { margin-bottom: 14px; }
 .tc-block h3 { margin: 0 0 6px; font-size: 12.5px; font-weight: 700; }
 .tc-block p { margin: 0; font-size: 11.5px; color: var(--text-2); line-height: 1.5; }
 .tc-link { color: var(--brand); font-size: 12px; font-weight: 600; text-decoration: none; }
 .tc-link:hover { text-decoration: underline; }
+
+/* ---- Submitted reports inbox ---- */
+.reports-panel { display: flex; flex-direction: column; max-height: 520px; }
+.reports-panel[hidden] { display: none !important; }
+body.reports-open #main-view,
+body.reports-open .settings-panel,
+body.reports-open .tc-panel { display: none; }
+.reports-body { padding: 0 14px 16px; overflow-y: auto; flex: 1; }
+.report-item {
+  background: var(--card-2); border-radius: 10px; padding: 10px 11px; margin-bottom: 8px;
+}
+.report-item-topic { font-size: 12px; font-weight: 700; }
+.report-item-meta { font-size: 10.5px; color: var(--text-3); margin-top: 2px; }
+.report-item-url {
+  font-size: 11.5px; color: var(--text-2); margin-top: 6px; overflow-wrap: anywhere;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+.report-item-details { font-size: 11.5px; color: var(--text); margin-top: 6px; line-height: 1.4; }
+
+/* ---- toast ---- */
+.toast {
+  position: fixed; left: 12px; bottom: 14px; z-index: 40;
+  max-width: calc(100% - 24px);
+  background: color-mix(in srgb, var(--card) 18%, #1a1a1e 82%);
+  color: #f3f3f5; border: 1px solid color-mix(in srgb, #fff 12%, transparent);
+  border-radius: 10px; padding: 10px 14px; font-size: 12.5px; font-weight: 600;
+  box-shadow: 0 8px 28px rgba(0,0,0,.35);
+  animation: toastIn .18s ease-out;
+}
+.toast[hidden] { display: none !important; }
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
 
 /* ---- smooth transitions (disabled by html.reduce-motion or OS reduced-motion) ---- */
 @keyframes pieFade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }

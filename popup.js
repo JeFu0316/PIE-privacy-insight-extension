@@ -490,9 +490,21 @@ async function renderOverviewDigest() {
   }
 }
 
-const FEEDBACK_EMAIL = 'jeffreyk348@gmail.com';
 // Future: official Toolingo site. Leave null until the domain is settled.
 const TOOLINGO_SITE_URL = null;
+let toastTimer = null;
+
+function showToast(text) {
+  const elToast = document.getElementById('toast');
+  if (!elToast) return;
+  elToast.textContent = text || '';
+  elToast.hidden = false;
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => {
+    elToast.hidden = true;
+    toastTimer = null;
+  }, 2800);
+}
 
 function closeHeadMenu() {
   const actions = document.getElementById('head-actions');
@@ -560,55 +572,99 @@ async function submitReportForm() {
     if (urlEl) urlEl.focus();
     return;
   }
-  const topic = topicEl ? topicEl.value : 'other';
-  const subject = tr('feedback.subject', { version: APP_VERSION });
-  const body = tr('report.mailBody', {
-    topic: topicLabel(topic),
-    url: siteUrl,
-    details: details || '—',
-    version: APP_VERSION,
-    language: (popupSettings && popupSettings.language) || 'auto',
-    locale: (typeof PIE_I18N !== 'undefined' && PIE_I18N.getLocale()) || 'en'
-  });
-
-  // Prefer Gmail compose (reliable in extension popups). Mailto as secondary.
-  // Future: POST to a Toolingo backend / Formspree (needs explicit network approval).
-  const gmail = 'https://mail.google.com/mail/?view=cm&fs=1'
-    + '&to=' + encodeURIComponent(FEEDBACK_EMAIL)
-    + '&su=' + encodeURIComponent(subject)
-    + '&body=' + encodeURIComponent(body);
-  const mailto = 'mailto:' + FEEDBACK_EMAIL
-    + '?subject=' + encodeURIComponent(subject)
-    + '&body=' + encodeURIComponent(body);
-
-  if (sendBtn) sendBtn.disabled = true;
-  if (msg) msg.textContent = tr('report.sending');
-  try {
-    if (chrome && chrome.tabs && chrome.tabs.create) {
-      await chrome.tabs.create({ url: gmail });
-    } else {
-      window.open(gmail, '_blank');
-    }
-    if (msg) msg.textContent = tr('report.sentHint');
-    setTimeout(() => {
-      closeReportPanel();
-      if (detailsEl) detailsEl.value = '';
-      if (sendBtn) sendBtn.disabled = false;
-    }, 700);
-  } catch (_) {
-    try {
-      await navigator.clipboard.writeText(subject + '\n\n' + body);
-      if (msg) msg.textContent = tr('report.copiedFallback', { email: FEEDBACK_EMAIL });
-    } catch (e2) {
-      try { window.open(mailto, '_blank'); } catch (e3) {}
-      if (msg) msg.textContent = tr('report.mailFallback');
-    }
-    if (sendBtn) sendBtn.disabled = false;
+  if (typeof PIE_REPORTS === 'undefined') {
+    if (msg) msg.textContent = tr('report.saveError');
+    return;
   }
+
+  const topic = topicEl ? topicEl.value : 'other';
+  if (sendBtn) sendBtn.disabled = true;
+  if (msg) msg.textContent = '';
+  try {
+    await PIE_REPORTS.add({
+      topic: topic,
+      url: siteUrl,
+      details: details,
+      version: APP_VERSION,
+      locale: (typeof PIE_I18N !== 'undefined' && PIE_I18N.getLocale()) || 'en'
+    });
+    if (detailsEl) detailsEl.value = '';
+    if (urlEl) urlEl.value = '';
+    closeReportPanel();
+    showToast(tr('report.thanks'));
+  } catch (_) {
+    if (msg) msg.textContent = tr('report.saveError');
+  }
+  if (sendBtn) sendBtn.disabled = false;
 }
 
 function openFeedbackReport() {
   openReportPanel();
+}
+
+function formatReportTime(ts) {
+  try {
+    return new Date(ts).toLocaleString();
+  } catch (_) {
+    return String(ts);
+  }
+}
+
+async function renderReportsList() {
+  const list = document.getElementById('reports-list');
+  if (!list || typeof PIE_REPORTS === 'undefined') return;
+  const items = await PIE_REPORTS.list();
+  list.innerHTML = '';
+  if (!items.length) {
+    list.appendChild(el('div', 'empty', tr('reports.empty')));
+    return;
+  }
+  items.forEach((r) => {
+    const card = el('div', 'report-item');
+    card.appendChild(el('div', 'report-item-topic', topicLabel(r.topic)));
+    card.appendChild(el('div', 'report-item-meta', formatReportTime(r.ts)));
+    card.appendChild(el('div', 'report-item-url', r.url || '—'));
+    if (r.details) card.appendChild(el('div', 'report-item-details', r.details));
+    list.appendChild(card);
+  });
+}
+
+function openReportsPanel() {
+  closeReportPanel();
+  closeHeadMenu();
+  closeTcPanel();
+  closeSettingsPanel();
+  document.body.classList.add('reports-open');
+  const panel = document.getElementById('reports-panel');
+  if (panel) panel.hidden = false;
+  renderReportsList();
+}
+
+function closeReportsPanel() {
+  document.body.classList.remove('reports-open');
+  const panel = document.getElementById('reports-panel');
+  if (panel) panel.hidden = true;
+}
+
+function setupReportsPanel() {
+  const back = document.getElementById('reports-back');
+  const clearBtn = document.getElementById('reports-clear');
+  const inboxBtn = document.getElementById('reports-inbox-btn');
+  if (back) back.addEventListener('click', closeReportsPanel);
+  if (inboxBtn) {
+    inboxBtn.addEventListener('click', () => {
+      closeSettingsPanel();
+      openReportsPanel();
+    });
+  }
+  if (clearBtn) {
+    clearBtn.addEventListener('click', async () => {
+      if (typeof PIE_REPORTS === 'undefined') return;
+      if (!window.confirm(tr('reports.clearConfirm'))) return;
+      await PIE_REPORTS.clear();
+      renderReportsList();
+    });
+  }
 }
 
 function setupTheme(initialTheme) {
@@ -658,6 +714,7 @@ function openTcPanel() {
   closeReportPanel();
   closeHeadMenu();
   closeSettingsPanel();
+  closeReportsPanel();
   document.body.classList.add('tc-open');
   const panel = document.getElementById('tc-panel');
   if (panel) panel.hidden = false;
@@ -1254,6 +1311,7 @@ function openSettingsPanel() {
   closeReportPanel();
   closeHeadMenu();
   closeTcPanel();
+  closeReportsPanel();
   document.body.classList.add('settings-open');
   document.getElementById('settings-panel').hidden = false;
 }
@@ -1555,5 +1613,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupHeadMenu();
   setupReportPanel();
   setupTcPanel();
+  setupReportsPanel();
   showCookies();
 });
