@@ -412,9 +412,9 @@ function renderOverview() {
   rings.appendChild(makeRing(tr('overview.trackTitle'), track.level,
     track.knownTrackers > 0 ? trn('overview.trackers', track.knownTrackers) : tr('overview.noneKnown')));
 
+  // Overview stays data-first: rings, digest, IP, stats, optional clean-URL action.
+  // Feature toggles live in Network / Security / Cookies / Settings (Beta).
   renderOverviewCleanUrl();
-  renderOverviewProtection();
-  renderOverviewFp();
   renderOverviewMyIp();
   renderOverviewDigest();
   renderOverviewAi();
@@ -425,9 +425,23 @@ function renderOverview() {
   stats.appendChild(statTile('b', ICO.third, thirdParty, tr('stats.thirdParty')));
   stats.appendChild(statTile('a', ICO.track, track.knownTrackers, tr('stats.knownTrackers')));
   stats.appendChild(statTile('g', ICO.check, sens.count, tr('stats.withPII')));
-  if (blockStats && blockStats.enabled && blockStats.pageBlocked > 0) {
-    stats.appendChild(statTile('r', ICO.check, blockStats.pageBlocked, tr('stats.blocked')));
+  if (blockStats && blockStats.enabled) {
+    stats.appendChild(statTile('r', ICO.check, blockStats.pageBlocked || 0, tr('overview.blockedPage')));
+    if (blockStats.lifetimeBlocked > 0) {
+      stats.appendChild(statTile('a', ICO.track, blockStats.lifetimeBlocked, tr('overview.blockedLifetime')));
+    }
   }
+  if (popupSettings && popupSettings.fingerprintDetect !== false && fpStats &&
+      (fpStats.canvas > 0 || fpStats.audio > 0)) {
+    const fpTotal = (fpStats.canvas || 0) + (fpStats.audio || 0);
+    stats.appendChild(statTile('b', ICO.third, fpTotal, tr('stats.fpSignals')));
+  }
+
+  // Hide unused overview feature slots.
+  const prot = document.getElementById('ov-protection');
+  if (prot) { prot.hidden = true; prot.innerHTML = ''; }
+  const fpBox = document.getElementById('ov-fp');
+  if (fpBox) { fpBox.hidden = true; fpBox.innerHTML = ''; }
 }
 
 function renderOverviewCleanUrl() {
@@ -443,14 +457,9 @@ function renderOverviewCleanUrl() {
   }
 
   const count = PIE_CLEAN_URLS.countTrackingParams(url);
-  box.hidden = false;
-  const card = featCard(tr('cleanUrls.section'));
-  if (count === 0) {
-    card.appendChild(el('div', 'feat-stat', tr('cleanUrls.none')));
-    box.appendChild(card);
-    return;
-  }
+  if (count === 0) { box.hidden = true; return; }
 
+  box.hidden = false;
   const row = el('div', 'ov-clean-url-row');
   const hint = el('span', 'ov-clean-hint', trn('cleanUrls.hint', count));
   const btn = el('button', 'ov-clean-btn', tr('cleanUrls.button'));
@@ -474,91 +483,7 @@ function renderOverviewCleanUrl() {
   });
   row.appendChild(hint);
   row.appendChild(btn);
-  card.appendChild(row);
-  box.appendChild(card);
-}
-
-function renderOverviewProtection() {
-  const box = document.getElementById('ov-protection');
-  if (!box) return;
-  box.innerHTML = '';
-
-  // Always show a compact protection card with toggle + stats.
-  const card = featCard(tr('net.blockTitle'));
-  const blockOn = !!(popupSettings && popupSettings.trackerBlock);
-  card.appendChild(featToggle({
-    text: tr('settings.trackerBlock'),
-    hint: tr('settings.trackerBlockHint'),
-    checked: blockOn,
-    onChange: async (on) => {
-      await saveFeatureSetting({ trackerBlock: on });
-      await refreshBlockStats();
-      renderOverviewProtection();
-      const active = document.querySelector('.tab.active');
-      if (active && active.dataset.tab === 'network') renderNetwork();
-    }
-  }));
-
-  if (blockStats && (blockOn || blockStats.lifetimeBlocked > 0)) {
-    const row = el('div', 'ov-prot-row');
-    const pageEl = el('div', 'ov-prot-tile');
-    pageEl.appendChild(el('div', 'ov-prot-n', String(blockStats.pageBlocked || 0)));
-    pageEl.appendChild(el('div', 'ov-prot-l', tr('overview.blockedPage')));
-    const lifeEl = el('div', 'ov-prot-tile');
-    lifeEl.appendChild(el('div', 'ov-prot-n', String(blockStats.lifetimeBlocked || 0)));
-    lifeEl.appendChild(el('div', 'ov-prot-l', tr('overview.blockedLifetime')));
-    row.appendChild(pageEl);
-    row.appendChild(lifeEl);
-    if (blockStats.domainsConnected > 0) {
-      const connEl = el('div', 'ov-prot-tile');
-      connEl.appendChild(el('div', 'ov-prot-n', String(blockStats.domainsConnected)));
-      connEl.appendChild(el('div', 'ov-prot-l', tr('overview.domainsConnected')));
-      row.appendChild(connEl);
-    }
-    card.appendChild(row);
-  }
-
-  box.hidden = false;
-  box.appendChild(card);
-}
-
-function renderOverviewFp() {
-  const box = document.getElementById('ov-fp');
-  if (!box) return;
-  box.innerHTML = '';
-
-  const detectOn = !popupSettings || popupSettings.fingerprintDetect !== false;
-  const shieldOn = !!(popupSettings && popupSettings.fingerprintShield);
-  const card = featCard(tr('security.fpTitle'));
-  card.appendChild(featToggle({
-    text: tr('settings.fingerprintDetect'),
-    hint: tr('settings.fingerprintDetectHint'),
-    checked: detectOn,
-    onChange: async (on) => {
-      await saveFeatureSetting({ fingerprintDetect: on });
-      if (!on) await saveFeatureSetting({ fingerprintShield: false });
-      await refreshFpStats();
-      renderOverviewFp();
-    }
-  }));
-  card.appendChild(featToggle({
-    text: tr('settings.fingerprintShield'),
-    hint: tr('settings.fingerprintShieldHint'),
-    checked: shieldOn,
-    disabled: !detectOn,
-    onChange: async (on) => {
-      await saveFeatureSetting({ fingerprintShield: on });
-      await refreshFpStats();
-      renderOverviewFp();
-    }
-  }));
-  if (detectOn && fpStats && (fpStats.canvas > 0 || fpStats.audio > 0)) {
-    let text = tr('overview.fpSignals', { canvas: fpStats.canvas, audio: fpStats.audio });
-    if (fpStats.shielded) text += ' · ' + tr('overview.fpShieldOn');
-    card.appendChild(el('div', 'feat-stat', text));
-  }
-  box.hidden = false;
-  box.appendChild(card);
+  box.appendChild(row);
 }
 
 function betaFeaturesOn() {
@@ -571,36 +496,19 @@ function renderOverviewAi() {
   if (!box) return;
   box.innerHTML = '';
 
-  // Beta-gated: hide completely unless Beta features is enabled.
-  if (!betaFeaturesOn()) {
+  // Only a run button when Beta + AI are already on in Settings — no toggles here.
+  if (!betaFeaturesOn() || !(popupSettings && popupSettings.aiExplainEnabled)) {
     box.hidden = true;
     if (explainBox) { explainBox.hidden = true; explainBox.innerHTML = ''; }
     return;
   }
 
-  const enabled = !!(popupSettings && popupSettings.aiExplainEnabled);
-  const card = featCard(tr('overview.aiTitle'));
-  card.appendChild(featToggle({
-    text: tr('settings.aiExplain'),
-    hint: tr('settings.aiExplainHint'),
-    checked: enabled,
-    onChange: async (on) => {
-      await saveFeatureSetting({ aiExplainEnabled: on });
-      if (!on && explainBox) { explainBox.hidden = true; explainBox.innerHTML = ''; }
-      renderOverviewAi();
-    }
-  }));
-
-  if (enabled) {
-    const btn = el('button', 'ov-ai-btn', tr('overview.aiExplainBtn'));
-    const badge = el('span', 'ov-ai-badge', tr('overview.aiOnDevice'));
-    btn.addEventListener('click', () => runAiExplain());
-    card.appendChild(btn);
-    card.appendChild(badge);
-  }
-
   box.hidden = false;
-  box.appendChild(card);
+  const btn = el('button', 'ov-ai-btn', tr('overview.aiExplainBtn'));
+  const badge = el('span', 'ov-ai-badge', tr('overview.aiOnDevice'));
+  btn.addEventListener('click', () => runAiExplain());
+  box.appendChild(btn);
+  box.appendChild(badge);
 }
 
 async function runAiExplain() {
@@ -1356,7 +1264,7 @@ function renderSecurity() {
       if (!on) await saveFeatureSetting({ fingerprintShield: false });
       await refreshFpStats();
       renderSecurity();
-      renderOverviewFp();
+      renderOverview();
     }
   }));
   fpCard.appendChild(featToggle({
@@ -1368,7 +1276,7 @@ function renderSecurity() {
       await saveFeatureSetting({ fingerprintShield: on });
       await refreshFpStats();
       renderSecurity();
-      renderOverviewFp();
+      renderOverview();
     }
   }));
   if (fpDetectOn) {
@@ -1503,7 +1411,7 @@ function renderNetworkOff(wrap) {
     onChange: async (on) => {
       await saveFeatureSetting({ trackerBlock: on });
       await refreshBlockStats();
-      renderOverviewProtection();
+      renderOverview();
       renderNetwork();
     }
   }));
@@ -1543,7 +1451,7 @@ async function renderNetwork() {
     onChange: async (on) => {
       await saveFeatureSetting({ trackerBlock: on });
       await refreshBlockStats();
-      renderOverviewProtection();
+      renderOverview();
       renderNetwork();
     }
   }));
@@ -2071,7 +1979,7 @@ function bindSettingsControls(settings) {
     trackerBlockEl.addEventListener('change', async () => {
       await saveFeatureSetting({ trackerBlock: trackerBlockEl.checked });
       await refreshBlockStats();
-      renderOverviewProtection();
+      renderOverview();
       const active = document.querySelector('.tab.active');
       if (active && active.dataset.tab === 'network') renderNetwork();
     });
@@ -2082,7 +1990,7 @@ function bindSettingsControls(settings) {
       await saveFeatureSetting({ fingerprintDetect: fpDetectEl.checked });
       if (!fpDetectEl.checked) await saveFeatureSetting({ fingerprintShield: false });
       await refreshFpStats();
-      renderOverviewFp();
+      renderOverview();
       renderSecurity();
     });
   }
@@ -2092,7 +2000,7 @@ function bindSettingsControls(settings) {
     fpShieldEl.addEventListener('change', async () => {
       await saveFeatureSetting({ fingerprintShield: fpShieldEl.checked });
       await refreshFpStats();
-      renderOverviewFp();
+      renderOverview();
       renderSecurity();
     });
   }

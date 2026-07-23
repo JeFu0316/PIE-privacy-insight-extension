@@ -294,7 +294,8 @@
       'overview.aiTitle': "Privacy explain",
       'settings.beta': "Beta features",
       'settings.betaEnable': "Enable beta features",
-      'settings.betaHint': "Shows early or device-limited tools that may not work on every Chrome install. Off by default."
+      'settings.betaHint': "Shows early or device-limited tools that may not work on every Chrome install. Off by default.",
+      'stats.fpSignals': "Fingerprint signals"
     },
 
     zh_CN: {
@@ -565,7 +566,8 @@
       'overview.aiTitle': "隐私解释",
       'settings.beta': "测试功能",
       'settings.betaEnable': "启用测试功能",
-      'settings.betaHint': "显示尚不稳定或受设备限制的功能，可能无法在所有 Chrome 上使用。默认关闭。"
+      'settings.betaHint': "显示尚不稳定或受设备限制的功能，可能无法在所有 Chrome 上使用。默认关闭。",
+      'stats.fpSignals': "指纹信号"
     },
 
     zh_TW: {
@@ -836,7 +838,8 @@
       'overview.aiTitle': "隱私說明",
       'settings.beta': "測試功能",
       'settings.betaEnable': "啟用測試功能",
-      'settings.betaHint': "顯示尚不穩定或受裝置限制的功能，可能無法在所有 Chrome 上使用。預設關閉。"
+      'settings.betaHint': "顯示尚不穩定或受裝置限制的功能，可能無法在所有 Chrome 上使用。預設關閉。",
+      'stats.fpSignals': "指紋訊號"
     },
 
     ru: {
@@ -1106,7 +1109,8 @@
       'overview.aiTitle': "Privacy explain",
       'settings.beta': "Beta features",
       'settings.betaEnable': "Enable beta features",
-      'settings.betaHint': "Shows early or device-limited tools that may not work on every Chrome install. Off by default."
+      'settings.betaHint': "Shows early or device-limited tools that may not work on every Chrome install. Off by default.",
+      'stats.fpSignals': "Fingerprint signals"
     },
 
     es: {
@@ -1376,7 +1380,8 @@
       'overview.aiTitle': "Privacy explain",
       'settings.beta': "Beta features",
       'settings.betaEnable': "Enable beta features",
-      'settings.betaHint': "Shows early or device-limited tools that may not work on every Chrome install. Off by default."
+      'settings.betaHint': "Shows early or device-limited tools that may not work on every Chrome install. Off by default.",
+      'stats.fpSignals': "Fingerprint signals"
     },
 
     fr: {
@@ -1646,7 +1651,8 @@
       'overview.aiTitle': "Privacy explain",
       'settings.beta': "Beta features",
       'settings.betaEnable': "Enable beta features",
-      'settings.betaHint': "Shows early or device-limited tools that may not work on every Chrome install. Off by default."
+      'settings.betaHint': "Shows early or device-limited tools that may not work on every Chrome install. Off by default.",
+      'stats.fpSignals': "Fingerprint signals"
     },
 
     de: {
@@ -1916,7 +1922,8 @@
       'overview.aiTitle': "Privacy explain",
       'settings.beta': "Beta features",
       'settings.betaEnable': "Enable beta features",
-      'settings.betaHint': "Shows early or device-limited tools that may not work on every Chrome install. Off by default."
+      'settings.betaHint': "Shows early or device-limited tools that may not work on every Chrome install. Off by default.",
+      'stats.fpSignals': "Fingerprint signals"
     },
 
     pt_BR: {
@@ -2186,7 +2193,8 @@
       'overview.aiTitle': "Privacy explain",
       'settings.beta': "Beta features",
       'settings.betaEnable': "Enable beta features",
-      'settings.betaHint': "Shows early or device-limited tools that may not work on every Chrome install. Off by default."
+      'settings.betaHint': "Shows early or device-limited tools that may not work on every Chrome install. Off by default.",
+      'stats.fpSignals': "Fingerprint signals"
     },
 
     ja: {
@@ -2456,7 +2464,8 @@
       'overview.aiTitle': "Privacy explain",
       'settings.beta': "Beta features",
       'settings.betaEnable': "Enable beta features",
-      'settings.betaHint': "Shows early or device-limited tools that may not work on every Chrome install. Off by default."
+      'settings.betaHint': "Shows early or device-limited tools that may not work on every Chrome install. Off by default.",
+      'stats.fpSignals': "Fingerprint signals"
     },
 
     ko: {
@@ -2726,7 +2735,8 @@
       'overview.aiTitle': "Privacy explain",
       'settings.beta': "Beta features",
       'settings.betaEnable': "Enable beta features",
-      'settings.betaHint': "Shows early or device-limited tools that may not work on every Chrome install. Off by default."
+      'settings.betaHint': "Shows early or device-limited tools that may not work on every Chrome install. Off by default.",
+      'stats.fpSignals': "Fingerprint signals"
     }
   };
 
