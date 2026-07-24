@@ -1,5 +1,12 @@
 # Build artifacts / packaged extension
 dist/
 
-# Local clone of the separate privacy-policy Pages repo (not part of the extension)
-_privacy-site/
+# Local clone of the separate privacy-policy Pages repo (NOT inside the extension
+# folder used for Load unpacked — Chrome rejects names starting with "_").
+# Keep the clone at C:\PIE-privacy-site (sibling of PIE-dev), never under C:\PIE-dev.
+
+# Legacy (removed from tree; ignore if reappear)
+pie16.png
+pie32.png
+pie128.png
+prototype/

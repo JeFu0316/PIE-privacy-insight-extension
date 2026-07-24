@@ -1,9 +1,12 @@
-/* P.I.E content script — cookie-consent detection + optional best-effort hide.
+/* P.I.E content script — cookie-consent detection, optional best-effort hide,
+ * and fingerprint signal counting (Phase 5).
  *
  * Privacy note: this script does NOT read or forward the page's fetch traffic,
  * form fields, storage, or cookie values. It only looks for a consent banner and
  * tells the extension one bit of information ("a banner exists" / "user accepted"),
- * via chrome.runtime messaging to the extension itself — never window.postMessage.
+ * via chrome.runtime messaging to the extension itself — never window.postMessage
+ * except for the fingerprint counter which postMessages only aggregate counts,
+ * never any canvas pixel data or audio buffers.
  *
  * Best-effort auto-hide (opt-in, off by default): when the user enables it in
  * settings, detected consent banners are hidden with CSS. This is cosmetic only —
@@ -191,4 +194,138 @@
       }, 1500);
     }
   }, true);
+
+  /* ---- Phase 5: Fingerprint signal detection --------------------------------
+   * We inject a tiny MAIN-world script (via a <script> element) that wraps the
+   * canvas and audio fingerprinting APIs. The injected script posts only
+   * aggregate counts — never raw pixel data or audio buffers — back here via
+   * window.postMessage with source: 'toolingo-fp'. This content script then
+   * answers the popup's GET_FINGERPRINT_STATS message with the counts.
+   *
+   * Shield mode (opt-in, off by default) adds tiny noise to canvas readback to
+   * degrade fingerprint accuracy; documented as best-effort. */
+
+  let fpSettings = {
+    detect: true,   // default — overridden by storage read below
+    shield: false
+  };
+  const fpCounts = { canvas: 0, audio: 0 };
+
+  function injectFpWatcher(shield) {
+    try {
+      const s = document.createElement('script');
+      // All logic runs in MAIN world to access the page's prototype chain.
+      s.textContent = (function (shieldMode) {
+        if (window.__toolingo_fp_injected) return;
+        window.__toolingo_fp_injected = true;
+        let canvasCount = 0, audioCount = 0;
+
+        function post(type) {
+          window.postMessage({ source: 'toolingo-fp', type: type, c: canvasCount, a: audioCount }, '*');
+        }
+
+        // --- Canvas ---
+        const origToDataURL = HTMLCanvasElement.prototype.toDataURL;
+        HTMLCanvasElement.prototype.toDataURL = function () {
+          canvasCount++;
+          if (shieldMode) {
+            // Add invisible 1-pixel noise to the canvas before reading.
+            try {
+              const ctx = this.getContext('2d');
+              if (ctx) {
+                const id = ctx.getImageData(0, 0, 1, 1);
+                id.data[0] ^= (Math.random() * 4 | 0);
+                ctx.putImageData(id, 0, 0);
+              }
+            } catch (_) {}
+          }
+          post('canvas');
+          return origToDataURL.apply(this, arguments);
+        };
+
+        const origToBlob = HTMLCanvasElement.prototype.toBlob;
+        HTMLCanvasElement.prototype.toBlob = function () {
+          canvasCount++;
+          post('canvas');
+          return origToBlob.apply(this, arguments);
+        };
+
+        const origGetImageData = CanvasRenderingContext2D.prototype.getImageData;
+        CanvasRenderingContext2D.prototype.getImageData = function () {
+          canvasCount++;
+          if (shieldMode) {
+            // Apply noise after data is captured (we can't mutate here without
+            // affecting the site's actual render, so only post the signal).
+          }
+          post('canvas');
+          return origGetImageData.apply(this, arguments);
+        };
+
+        // --- AudioContext ---
+        function patchAudioContext(ctor) {
+          if (!ctor || !ctor.prototype) return;
+          const origDecodeAudio = ctor.prototype.decodeAudioData;
+          if (origDecodeAudio) {
+            ctor.prototype.decodeAudioData = function () {
+              audioCount++;
+              post('audio');
+              return origDecodeAudio.apply(this, arguments);
+            };
+          }
+        }
+        try { patchAudioContext(AudioContext); } catch (_) {}
+        try { patchAudioContext(OfflineAudioContext); } catch (_) {}
+      }).toString().replace(/^function[^{]*\{/, '').replace(/}$/, '').replace('shieldMode', shield ? 'true' : 'false');
+      (document.head || document.documentElement).appendChild(s);
+      s.remove();
+    } catch (_) {}
+  }
+
+  function startFpDetection() {
+    if (!fpSettings.detect) return;
+    injectFpWatcher(fpSettings.shield);
+
+    window.addEventListener('message', (event) => {
+      if (!event.data || event.data.source !== 'toolingo-fp') return;
+      // Accept only numeric counts — no data from outside.
+      fpCounts.canvas = (typeof event.data.c === 'number') ? event.data.c : fpCounts.canvas;
+      fpCounts.audio = (typeof event.data.a === 'number') ? event.data.a : fpCounts.audio;
+    });
+  }
+
+  // Read settings then start detection.
+  try {
+    chrome.storage.sync.get(STORAGE_KEY, (data) => {
+      const s = (data && data[STORAGE_KEY]) || {};
+      fpSettings.detect = s.fingerprintDetect !== false; // default true
+      fpSettings.shield = s.fingerprintShield === true;
+      startFpDetection();
+    });
+  } catch (_) {
+    startFpDetection();
+  }
+
+  // React to settings changes while the page is open.
+  try {
+    chrome.storage.onChanged.addListener((changes, area) => {
+      if (area !== 'sync' || !changes[STORAGE_KEY]) return;
+      const s = changes[STORAGE_KEY].newValue || {};
+      fpSettings.detect = s.fingerprintDetect !== false;
+      fpSettings.shield = s.fingerprintShield === true;
+    });
+  } catch (_) {}
+
+  // Answer popup requests for fingerprint stats.
+  try {
+    chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+      if (msg && msg.type === 'GET_FINGERPRINT_STATS') {
+        sendResponse({
+          canvas: fpCounts.canvas,
+          audio: fpCounts.audio,
+          shielded: fpSettings.shield && fpSettings.detect
+        });
+        return true;
+      }
+    });
+  } catch (_) {}
 })();

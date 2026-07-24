@@ -1,32 +1,34 @@
 {
   "manifest_version": 3,
-  "name": "Privacy Insight Extension(P.I.E)",
-  "version": "2.0.2",
-  "description": "Provides insights into website cookie usage to improve user awareness of online tracking and privacy.",
+  "name": "Toolingo - Your All In One Privacy Security Tools",
+  "version": "2.1.0",
+  "description": "Toolingo helps you understand website cookie usage, third-party tracking, and connection security — on your device.",
   "permissions": [
     "cookies",
     "tabs",
     "webRequest",
     "storage",
-    "notifications"
+    "notifications",
+    "declarativeNetRequest",
+    "offscreen"
   ],
   "host_permissions": ["<all_urls>"],
   "background": {
     "service_worker": "background.js"
   },
   "icons": {
-    "16": "pie16.png",
-    "32": "pie32.png",
-    "48": "pie128.png",
-    "128": "pie128.png"
+    "16": "toolingo16.png",
+    "32": "toolingo32.png",
+    "48": "toolingo48.png",
+    "128": "toolingo128.png"
   },
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
-      "16": "pie16.png",
-      "32": "pie32.png",
-      "48": "pie128.png",
-      "128": "pie128.png"
+      "16": "toolingo16-darkui.png",
+      "32": "toolingo32-darkui.png",
+      "48": "toolingo48-darkui.png",
+      "128": "toolingo128-darkui.png"
     }
   },
   "content_scripts": [
@@ -37,4 +39,3 @@
     }
   ]
 }
-

@@ -1,4 +1,4 @@
-importScripts('settings.js', 'i18n.js', 'tracker-domains.js');
+importScripts('settings.js', 'i18n.js', 'tracker-domains.js', 'digest.js', 'block-stats.js');
 
 let bgSettings = PIE_SETTINGS.DEFAULTS;
 
@@ -7,11 +7,99 @@ async function refreshSettings() {
   PIE_I18N.setLocale(bgSettings.language);
 }
 
-refreshSettings();
+// Initial load — settings must resolve first; DNR rules are applied after the
+// function is defined (see applyDnrRules definition below).
+const _settingsReady = refreshSettings();
+
+/* ---------- Toolbar icon: transparent glyph, light/dark variants ----------
+ * Chrome has no toolbar-color API, and Chrome's Appearance theme often does
+ * NOT match prefers-color-scheme. We therefore:
+ *   1) Default action icons to white glyphs (visible on dark Chrome).
+ *   2) Let Settings force light/dark lines, or Auto via prefers-color-scheme.
+ * Store listing icons (manifest.icons) stay dark-on-transparent for light pages.
+ */
+const ICONS_FOR_LIGHT_UI = {
+  16: 'toolingo16.png',
+  32: 'toolingo32.png',
+  48: 'toolingo48.png',
+  128: 'toolingo128.png'
+};
+const ICONS_FOR_DARK_UI = {
+  16: 'toolingo16-darkui.png',
+  32: 'toolingo32-darkui.png',
+  48: 'toolingo48-darkui.png',
+  128: 'toolingo128-darkui.png'
+};
+
+function applyToolbarIcon(useWhiteLines) {
+  try {
+    chrome.action.setIcon({ path: useWhiteLines ? ICONS_FOR_DARK_UI : ICONS_FOR_LIGHT_UI });
+  } catch (_) {}
+}
+
+async function ensureIconThemeOffscreen() {
+  try {
+    const contexts = await chrome.runtime.getContexts({
+      contextTypes: ['OFFSCREEN_DOCUMENT'],
+      documentUrls: [chrome.runtime.getURL('offscreen-icon-theme.html')]
+    });
+    if (contexts && contexts.length) return true;
+  } catch (_) {}
+  try {
+    await chrome.offscreen.createDocument({
+      url: 'offscreen-icon-theme.html',
+      reasons: ['MATCH_MEDIA_LISTENERS'],
+      justification: 'Detect color scheme so Auto toolbar-icon mode can adapt.'
+    });
+    return true;
+  } catch (e) {
+    const msg = String(e && e.message ? e.message : e);
+    if (msg.indexOf('Only a single offscreen') !== -1 || msg.indexOf('already exists') !== -1) {
+      return true;
+    }
+    return false;
+  }
+}
+
+async function detectColorScheme() {
+  const ready = await ensureIconThemeOffscreen();
+  if (!ready) return null;
+  for (let i = 0; i < 5; i++) {
+    try {
+      const resp = await chrome.runtime.sendMessage({ type: 'GET_COLOR_SCHEME' });
+      if (resp && (resp.scheme === 'dark' || resp.scheme === 'light')) return resp.scheme;
+    } catch (_) {}
+    await new Promise((r) => setTimeout(r, 80));
+  }
+  return null;
+}
+
+async function refreshToolbarIcon() {
+  const mode = (bgSettings && bgSettings.toolbarIcon) || 'light';
+  if (mode === 'light') {
+    applyToolbarIcon(true);   // white lines for dark toolbars
+    return;
+  }
+  if (mode === 'dark') {
+    applyToolbarIcon(false);  // dark lines for light toolbars
+    return;
+  }
+  // auto
+  const scheme = await detectColorScheme();
+  if (scheme === 'dark') applyToolbarIcon(true);
+  else if (scheme === 'light') applyToolbarIcon(false);
+  else applyToolbarIcon(true); // fail-safe: prefer visibility on dark Chrome
+}
+
+_settingsReady.then(() => refreshToolbarIcon()).catch(() => {});
+chrome.runtime.onStartup.addListener(() => { refreshToolbarIcon(); });
+chrome.runtime.onInstalled.addListener(() => { refreshToolbarIcon(); });
 
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area === 'sync' && changes[PIE_SETTINGS.STORAGE_KEY]) {
     const wasOn = bgSettings.thirdPartyNotifications;
+    const wasBlocking = bgSettings.trackerBlock;
+    const wasIcon = bgSettings.toolbarIcon;
     bgSettings = PIE_SETTINGS.mergeWithDefaults(changes[PIE_SETTINGS.STORAGE_KEY].newValue);
     // Keep notification wording in sync with the chosen language.
     PIE_I18N.setLocale(bgSettings.language);
@@ -19,8 +107,69 @@ chrome.storage.onChanged.addListener((changes, area) => {
     if (wasOn && !bgSettings.thirdPartyNotifications) clearAllNotifications();
     // Refresh badges so a toggled trackerBadge setting takes effect immediately.
     refreshAllBadges();
+    // Re-apply DNR rules when trackerBlock setting changes.
+    if (wasBlocking !== bgSettings.trackerBlock) applyDnrRules();
+    if (wasIcon !== bgSettings.toolbarIcon) refreshToolbarIcon();
   }
 });
+
+/* ---------- Declarative Net Request — tracker blocking (Phase 4) ----------
+ * Opt-in only (trackerBlock default false). Builds dynamic DNR rules from the
+ * PIE_TRACKERS domain list, targeting third-party requests only. Rules are
+ * replaced atomically; cleared when the feature is disabled.
+ *
+ * We do NOT use onRuleMatchedDebug (CWS-limited). Instead, blocked requests
+ * surface via webRequest.onErrorOccurred with error net::ERR_BLOCKED_BY_CLIENT,
+ * which is caught below to increment block-stats counters. */
+
+const DNR_RULE_ID_BASE = 10000;
+const DNR_RESOURCE_TYPES = [
+  'script', 'xmlhttprequest', 'image', 'sub_frame',
+  'ping', 'media', 'websocket', 'font', 'other'
+];
+
+async function applyDnrRules() {
+  if (typeof PIE_TRACKERS === 'undefined') return;
+  const enabled = bgSettings.trackerBlock;
+  const existing = await chrome.declarativeNetRequest.getDynamicRules();
+  const removeIds = existing.map((r) => r.id);
+
+  if (!enabled) {
+    if (removeIds.length > 0) {
+      await chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds: removeIds });
+    }
+    return;
+  }
+
+  // Build one DNR rule per known tracker domain, third-party only.
+  const domains = Object.keys(PIE_TRACKERS.DOMAINS);
+  const addRules = domains.map((domain, i) => ({
+    id: DNR_RULE_ID_BASE + i,
+    priority: 1,
+    action: { type: 'block' },
+    condition: {
+      requestDomains: [domain],
+      domainType: 'thirdParty',
+      resourceTypes: DNR_RESOURCE_TYPES
+    }
+  }));
+
+  await chrome.declarativeNetRequest.updateDynamicRules({
+    removeRuleIds: removeIds,
+    addRules: addRules
+  });
+}
+
+// Apply rules on startup once settings + function are both ready.
+_settingsReady.then(() => applyDnrRules()).catch(() => {});
+
+// Count ERR_BLOCKED_BY_CLIENT events for known tracker hosts.
+// These fire for requests blocked by DNR as well as other mechanisms.
+const BLOCKED_ERRORS = new Set([
+  'net::ERR_BLOCKED_BY_CLIENT',
+  'net::ERR_BLOCKED_BY_ADMINISTRATOR',
+  'net::ERR_BLOCKED_BY_RESPONSE'
+]);
 
 /* ---------- Toolbar badge = known-tracker count on the current tab ----------
  * The badge shows how many distinct known-tracker hosts a tab has contacted, so
@@ -54,7 +203,11 @@ function refreshAllBadges() {
 chrome.tabs.onUpdated.addListener((tabId, info, tab) => {
   // A new URL means a new page: clear this tab's third-party alert state so the
   // (single) summary notification starts fresh instead of carrying over.
-  if (info.url) clearTabNotification(tabId);
+  if (info.url) {
+    clearTabNotification(tabId);
+    // Reset per-tab block counter for the new page.
+    if (typeof PIE_BLOCK_STATS !== 'undefined') PIE_BLOCK_STATS.resetTab(tabId);
+  }
 
   if (info.status === 'complete' && tab.url) {
     const isSecure = tab.url.startsWith('https://');
@@ -130,7 +283,7 @@ chrome.webRequest.onHeadersReceived.addListener(
         st.notifId = 'pie-3p-' + tabId + '-' + Date.now();
         chrome.notifications.create(st.notifId, {
           type: 'basic',
-          iconUrl: 'pie128.png',
+          iconUrl: 'toolingo128.png',
           title: PIE_I18N.t('notif.title'),
           message: message,
           priority: 0
@@ -214,7 +367,13 @@ chrome.webRequest.onBeforeRequest.addListener(
       if (tracker && reqHost) {
         let ts = tabTrackers.get(tabId);
         if (!ts) { ts = new Set(); tabTrackers.set(tabId, ts); }
-        if (!ts.has(reqHost)) { ts.add(reqHost); updateBadge(tabId); }
+        if (!ts.has(reqHost)) {
+          ts.add(reqHost);
+          updateBadge(tabId);
+          if (bgSettings.weeklyDigestEnabled && typeof PIE_DIGEST !== 'undefined') {
+            try { PIE_DIGEST.recordTracker(reqHost); } catch (_) {}
+          }
+        }
       }
 
       if (!bgSettings.networkMonitoring) return;   // network log is gated; badge is not
@@ -248,11 +407,25 @@ chrome.webRequest.onCompleted.addListener(
 
 chrome.webRequest.onErrorOccurred.addListener(
   (details) => {
-    // The request failed or was cancelled (by the site, the network, or another
-    // extension) — P.I.E only observes, it never blocks. Labelled 'failed', not
-    // 'blocked', to avoid implying P.I.E stopped it.
+    // The request failed or was cancelled. Label as 'failed' in the net log.
     const e = pending.get(details.requestId);
     if (e) { e.status = 'failed'; pending.delete(details.requestId); }
+
+    // When our DNR rules are active, blocked tracker requests surface here with
+    // ERR_BLOCKED_BY_CLIENT. Count them for the block-stats display.
+    if (bgSettings.trackerBlock && BLOCKED_ERRORS.has(details.error)) {
+      try {
+        const reqHost = hostOf(details.url);
+        const topHost = tabHost.get(details.tabId) || '';
+        const isThird = !!(topHost && reqHost && baseDomain(reqHost) !== baseDomain(topHost));
+        if (isThird && typeof PIE_TRACKERS !== 'undefined' && PIE_TRACKERS.lookup(reqHost)) {
+          const tabId = details.tabId;
+          if (typeof PIE_BLOCK_STATS !== 'undefined') {
+            PIE_BLOCK_STATS.recordBlock(tabId >= 0 ? tabId : undefined);
+          }
+        }
+      } catch (_) {}
+    }
   },
   { urls: ['<all_urls>'] }
 );
@@ -262,6 +435,7 @@ chrome.tabs.onRemoved.addListener((tabId) => {
   tabHost.delete(tabId);
   tabTrackers.delete(tabId);
   clearTabNotification(tabId);
+  if (typeof PIE_BLOCK_STATS !== 'undefined') PIE_BLOCK_STATS.removeTab(tabId);
   if (bgSettings.autoClean) scheduleAutoClean();
 });
 
@@ -304,11 +478,21 @@ async function sweepTrackerCookies() {
       } catch (_) {}
     }
   } catch (_) {}
+  if (removed > 0 && bgSettings.weeklyDigestEnabled && typeof PIE_DIGEST !== 'undefined') {
+    try { PIE_DIGEST.recordCleaned(removed); } catch (_) {}
+  }
   return removed;
 }
 
 /* ---------- Popup messages ---------- */
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg && msg.type === 'ICON_COLOR_SCHEME' && msg.scheme) {
+    // Only Auto mode follows live scheme changes.
+    if ((bgSettings && bgSettings.toolbarIcon) === 'auto') {
+      applyToolbarIcon(msg.scheme === 'dark');
+    }
+    return;
+  }
   if (msg && msg.type === 'GET_NETWORK_LOG') {
     const tabId = msg.tabId;
     const entries = (tabId != null && netLog.has(tabId)) ? netLog.get(tabId) : [];
@@ -318,5 +502,23 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg && msg.type === 'CLEAN_TRACKER_COOKIES') {
     sweepTrackerCookies().then((removed) => sendResponse({ removed: removed }));
     return true; // async response
+  }
+  if (msg && msg.type === 'GET_BLOCK_STATS') {
+    const tabId = msg.tabId;
+    const domainsConnected = (tabId != null && tabTrackers.has(tabId))
+      ? tabTrackers.get(tabId).size : 0;
+    if (typeof PIE_BLOCK_STATS !== 'undefined') {
+      PIE_BLOCK_STATS.getStats(tabId).then((stats) => {
+        sendResponse({
+          enabled: !!bgSettings.trackerBlock,
+          pageBlocked: stats.pageBlocked,
+          lifetimeBlocked: stats.lifetimeBlocked,
+          domainsConnected: domainsConnected
+        });
+      });
+      return true; // async
+    }
+    sendResponse({ enabled: false, pageBlocked: 0, lifetimeBlocked: 0, domainsConnected: domainsConnected });
+    return;
   }
 });

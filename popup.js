@@ -5,14 +5,18 @@
 
 let cookieData = [];
 let currentSiteHost = '';
+let currentTabUrl = '';
+let currentTabId = null;
 let currentIp = '';
 let currentSecure = true;
 let consentDetected = false;
 let popupSettings = null;
 let myIpInfo = null;   // { ip, loc, colo, warp, ptr, kind } when my-IP lookup is on
 const thirdPartyHits = new Set();   // third-party domains seen via network (background.js)
+let blockStats = null;  // { enabled, pageBlocked, lifetimeBlocked, domainsConnected }
+let fpStats = null;     // { canvas, audio, shielded }
 
-const APP_VERSION = '2.0.2';
+const APP_VERSION = '2.1.0';
 
 // i18n shorthands. Defensive so the engine still loads in the headless test
 // sandbox (where PIE_I18N isn't present) — there they resolve to the key.
@@ -408,7 +412,12 @@ function renderOverview() {
   rings.appendChild(makeRing(tr('overview.trackTitle'), track.level,
     track.knownTrackers > 0 ? trn('overview.trackers', track.knownTrackers) : tr('overview.noneKnown')));
 
+  // Overview stays data-first: rings, digest, IP, stats, optional clean-URL action.
+  // Feature toggles live in Network / Security / Cookies / Settings (Beta).
+  renderOverviewCleanUrl();
   renderOverviewMyIp();
+  renderOverviewDigest();
+  renderOverviewAi();
 
   const stats = document.getElementById('ov-stats');
   stats.innerHTML = '';
@@ -416,17 +425,159 @@ function renderOverview() {
   stats.appendChild(statTile('b', ICO.third, thirdParty, tr('stats.thirdParty')));
   stats.appendChild(statTile('a', ICO.track, track.knownTrackers, tr('stats.knownTrackers')));
   stats.appendChild(statTile('g', ICO.check, sens.count, tr('stats.withPII')));
-
-  const hint = document.getElementById('ov-hint');
-  let msg;
-  if (sens.count === 0 && track.knownTrackers === 0) {
-    msg = tr('overview.hintClean');
-  } else if (sens.count === 0) {
-    msg = tr('overview.hintTrackersOnly');
-  } else {
-    msg = trn('overview.hintPII', sens.count);
+  if (blockStats && blockStats.enabled) {
+    stats.appendChild(statTile('r', ICO.check, blockStats.pageBlocked || 0, tr('overview.blockedPage')));
+    if (blockStats.lifetimeBlocked > 0) {
+      stats.appendChild(statTile('a', ICO.track, blockStats.lifetimeBlocked, tr('overview.blockedLifetime')));
+    }
   }
-  hint.textContent = msg;
+  if (popupSettings && popupSettings.fingerprintDetect !== false && fpStats &&
+      (fpStats.canvas > 0 || fpStats.audio > 0)) {
+    const fpTotal = (fpStats.canvas || 0) + (fpStats.audio || 0);
+    stats.appendChild(statTile('b', ICO.third, fpTotal, tr('stats.fpSignals')));
+  }
+
+  // Hide unused overview feature slots.
+  const prot = document.getElementById('ov-protection');
+  if (prot) { prot.hidden = true; prot.innerHTML = ''; }
+  const fpBox = document.getElementById('ov-fp');
+  if (fpBox) { fpBox.hidden = true; fpBox.innerHTML = ''; }
+}
+
+function renderOverviewCleanUrl() {
+  const box = document.getElementById('ov-clean-url');
+  if (!box) return;
+  box.innerHTML = '';
+
+  if (typeof PIE_CLEAN_URLS === 'undefined') { box.hidden = true; return; }
+  const url = currentTabUrl;
+  if (!url || (!url.startsWith('http://') && !url.startsWith('https://'))) {
+    box.hidden = true;
+    return;
+  }
+
+  const count = PIE_CLEAN_URLS.countTrackingParams(url);
+  if (count === 0) { box.hidden = true; return; }
+
+  box.hidden = false;
+  const row = el('div', 'ov-clean-url-row');
+  const hint = el('span', 'ov-clean-hint', trn('cleanUrls.hint', count));
+  const btn = el('button', 'ov-clean-btn', tr('cleanUrls.button'));
+  btn.addEventListener('click', async () => {
+    btn.disabled = true;
+    try {
+      const result = PIE_CLEAN_URLS.clean(url);
+      if (!result.changed) { btn.disabled = false; return; }
+      try {
+        await chrome.tabs.update(currentTabId, { url: result.url });
+        showToast(tr('cleanUrls.done'));
+        box.hidden = true;
+      } catch (_) {
+        try { await navigator.clipboard.writeText(result.url); } catch (_) {}
+        showToast(tr('cleanUrls.copyFallback'));
+        btn.disabled = false;
+      }
+    } catch (_) {
+      btn.disabled = false;
+    }
+  });
+  row.appendChild(hint);
+  row.appendChild(btn);
+  box.appendChild(row);
+}
+
+function betaFeaturesOn() {
+  return !!(popupSettings && popupSettings.betaFeatures);
+}
+
+function renderOverviewAi() {
+  const box = document.getElementById('ov-ai');
+  const explainBox = document.getElementById('ov-explain');
+  if (!box) return;
+  box.innerHTML = '';
+
+  // Only a run button when Beta + AI are already on in Settings — no toggles here.
+  if (!betaFeaturesOn() || !(popupSettings && popupSettings.aiExplainEnabled)) {
+    box.hidden = true;
+    if (explainBox) { explainBox.hidden = true; explainBox.innerHTML = ''; }
+    return;
+  }
+
+  box.hidden = false;
+  const btn = el('button', 'ov-ai-btn', tr('overview.aiExplainBtn'));
+  const badge = el('span', 'ov-ai-badge', tr('overview.aiOnDevice'));
+  btn.addEventListener('click', () => runAiExplain());
+  box.appendChild(btn);
+  box.appendChild(badge);
+}
+
+async function runAiExplain() {
+  const explainBox = document.getElementById('ov-explain');
+  if (!explainBox) return;
+  if (!betaFeaturesOn() || !(popupSettings && popupSettings.aiExplainEnabled)) {
+    explainBox.hidden = true;
+    return;
+  }
+  if (typeof PIE_AI_EXPLAIN === 'undefined') {
+    explainBox.hidden = false;
+    explainBox.textContent = tr('overview.aiUnavailable');
+    return;
+  }
+
+  explainBox.hidden = false;
+  explainBox.textContent = '';
+  const loading = el('div', 'ov-explain-loading', tr('overview.aiLoading'));
+  explainBox.appendChild(loading);
+
+  let avail;
+  try { avail = await PIE_AI_EXPLAIN.availability(); } catch (_) { avail = 'unavailable'; }
+
+  if (avail === 'unavailable') {
+    loading.textContent = tr('overview.aiUnavailable');
+    return;
+  }
+
+  if (avail === 'downloadable' || avail === 'downloading') {
+    loading.textContent = tr('overview.aiLoading');
+  }
+
+  const sens = overallSensitivity(cookieData);
+  const track = overallTracking(cookieData);
+  const facts = {
+    host: currentSiteHost,
+    https: currentSecure,
+    sensitivityLabel: sens.level,
+    trackingLabel: track.level,
+    cookieCount: cookieData.length,
+    thirdPartyCount: cookieData.filter(isThirdPartyCookie).length,
+    knownTrackers: track.knownTrackers,
+    piiCount: sens.count,
+    blockStats: blockStats,
+    fpSignals: fpStats
+  };
+
+  let result;
+  try { result = await PIE_AI_EXPLAIN.explain(facts); } catch (_) { result = { error: 'explain failed' }; }
+  explainBox.innerHTML = '';
+
+  if (result.error) {
+    explainBox.textContent = tr('overview.aiUnavailable');
+    return;
+  }
+
+  const summary = el('div', 'ov-explain-summary', result.summary);
+  explainBox.appendChild(summary);
+  if (result.actions && result.actions.length) {
+    const list = el('ul', 'ov-explain-actions');
+    result.actions.forEach((a) => {
+      const li = document.createElement('li');
+      li.textContent = a;
+      list.appendChild(li);
+    });
+    explainBox.appendChild(list);
+  }
+  const deviceNote = el('div', 'ov-ai-badge', tr('overview.aiOnDevice'));
+  explainBox.appendChild(deviceNote);
 }
 
 function renderOverviewMyIp() {
@@ -464,22 +615,382 @@ function renderOverviewMyIp() {
   box.appendChild(el('div', 'ov-ip-meta', bits.join(' · ')));
 }
 
-const FEEDBACK_EMAIL = 'jeffreyk348@gmail.com';
+async function renderOverviewDigest() {
+  const box = document.getElementById('ov-digest');
+  if (!box) return;
+  box.innerHTML = '';
+  if (!popupSettings || !popupSettings.weeklyDigestEnabled || typeof PIE_DIGEST === 'undefined') {
+    box.hidden = true;
+    return;
+  }
+  box.hidden = false;
+  box.appendChild(el('div', 'ov-digest-title', tr('digest.title')));
+  let snap;
+  try {
+    snap = await PIE_DIGEST.snapshot();
+  } catch (_) {
+    snap = null;
+  }
+  if (!snap || (snap.trackerEvents === 0 && snap.cookiesCleaned === 0)) {
+    box.appendChild(el('div', 'ov-digest-empty', tr('digest.empty')));
+    return;
+  }
+  const row = el('div', 'ov-digest-stats');
+  row.appendChild(statTile('a', ICO.track, snap.trackerEvents, tr('digest.trackers')));
+  row.appendChild(statTile('g', ICO.check, snap.cookiesCleaned, tr('digest.cleaned')));
+  box.appendChild(row);
+  if (snap.topTrackers && snap.topTrackers.length) {
+    box.appendChild(el('div', 'ov-digest-top-label', tr('digest.top')));
+    const list = el('ul', 'ov-digest-top');
+    snap.topTrackers.forEach((item) => {
+      const li = document.createElement('li');
+      li.textContent = item.domain + ' · ' + item.count;
+      list.appendChild(li);
+    });
+    box.appendChild(list);
+  }
+}
+
+// Future: official Toolingo site. Leave null until the domain is settled.
+const TOOLINGO_SITE_URL = null;
+/** Free GitHub Pages supporter page (hosting only — add Ko-fi/PayPal/Sponsors links on that page when ready). */
+const SUPPORT_URL = 'https://jefu0316.github.io/Index.html/support.html';
+let toastTimer = null;
+
+function showToast(text) {
+  const elToast = document.getElementById('toast');
+  if (!elToast) return;
+  elToast.textContent = text || '';
+  elToast.hidden = false;
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => {
+    elToast.hidden = true;
+    toastTimer = null;
+  }, 2800);
+}
+
+function closeHeadMenu() {
+  const actions = document.getElementById('head-actions');
+  const menuBtn = document.getElementById('menu-btn');
+  document.body.classList.remove('head-menu-open');
+  if (actions) actions.setAttribute('aria-hidden', 'true');
+  if (menuBtn) menuBtn.setAttribute('aria-expanded', 'false');
+}
+
+function openHeadMenu() {
+  const actions = document.getElementById('head-actions');
+  const menuBtn = document.getElementById('menu-btn');
+  document.body.classList.add('head-menu-open');
+  if (actions) actions.setAttribute('aria-hidden', 'false');
+  if (menuBtn) menuBtn.setAttribute('aria-expanded', 'true');
+}
+
+function toggleHeadMenu() {
+  if (document.body.classList.contains('head-menu-open')) closeHeadMenu();
+  else openHeadMenu();
+}
+
+function openReportPanel() {
+  closeHeadMenu();
+  closeTcPanel();
+  closeSupportPanel();
+  const panel = document.getElementById('report-panel');
+  if (!panel) return;
+  panel.hidden = false;
+  const urlEl = document.getElementById('report-url');
+  if (urlEl && !urlEl.value && currentSiteHost) {
+    urlEl.value = (currentSecure ? 'https://' : 'http://') + currentSiteHost;
+  }
+  const details = document.getElementById('report-details');
+  if (urlEl) urlEl.focus();
+  else if (details) details.focus();
+}
+
+function closeReportPanel() {
+  const panel = document.getElementById('report-panel');
+  if (panel) panel.hidden = true;
+  const msg = document.getElementById('report-msg');
+  if (msg) msg.textContent = '';
+}
+
+function topicLabel(value) {
+  const map = {
+    bug: tr('report.topicBug'),
+    site: tr('report.topicSite'),
+    idea: tr('report.topicIdea'),
+    other: tr('report.topicOther')
+  };
+  return map[value] || value;
+}
+
+async function submitReportForm() {
+  const topicEl = document.getElementById('report-topic');
+  const urlEl = document.getElementById('report-url');
+  const detailsEl = document.getElementById('report-details');
+  const msg = document.getElementById('report-msg');
+  const sendBtn = document.getElementById('report-send');
+  const details = (detailsEl && detailsEl.value || '').trim();
+  const siteUrl = (urlEl && urlEl.value || '').trim();
+  if (!siteUrl) {
+    if (msg) msg.textContent = tr('report.needUrl');
+    if (urlEl) urlEl.focus();
+    return;
+  }
+  if (typeof PIE_REPORTS === 'undefined') {
+    if (msg) msg.textContent = tr('report.saveError');
+    return;
+  }
+
+  const topic = topicEl ? topicEl.value : 'other';
+  if (sendBtn) sendBtn.disabled = true;
+  if (msg) msg.textContent = '';
+  let item;
+  try {
+    item = await PIE_REPORTS.add({
+      topic: topic,
+      url: siteUrl,
+      details: details,
+      version: APP_VERSION,
+      locale: (typeof PIE_I18N !== 'undefined' && PIE_I18N.getLocale()) || 'en'
+    });
+  } catch (_) {
+    if (msg) msg.textContent = tr('report.saveError');
+    if (sendBtn) sendBtn.disabled = false;
+    return;
+  }
+  try {
+    await PIE_REPORTS.submitRemote(item);
+    if (detailsEl) detailsEl.value = '';
+    if (urlEl) urlEl.value = '';
+    closeReportPanel();
+    showToast(tr('report.thanks'));
+  } catch (_) {
+    if (msg) msg.textContent = tr('report.sendError');
+  } finally {
+    if (sendBtn) sendBtn.disabled = false;
+  }
+}
 
 function openFeedbackReport() {
-  const subject = tr('feedback.subject', { version: APP_VERSION });
-  const body = tr('feedback.body', {
-    version: APP_VERSION,
-    language: (popupSettings && popupSettings.language) || 'auto',
-    locale: (typeof PIE_I18N !== 'undefined' && PIE_I18N.getLocale()) || 'en'
-  });
-  const url = 'mailto:' + FEEDBACK_EMAIL
-    + '?subject=' + encodeURIComponent(subject)
-    + '&body=' + encodeURIComponent(body);
+  openReportPanel();
+}
+
+function formatReportTime(ts) {
   try {
-    window.open(url, '_blank');
+    return new Date(ts).toLocaleString();
   } catch (_) {
-    location.href = url;
+    return String(ts);
+  }
+}
+
+async function renderReportsList() {
+  const list = document.getElementById('reports-list');
+  if (!list || typeof PIE_REPORTS === 'undefined') return;
+  const items = await PIE_REPORTS.list();
+  list.innerHTML = '';
+  if (!items.length) {
+    list.appendChild(el('div', 'empty', tr('reports.empty')));
+    return;
+  }
+  items.forEach((r) => {
+    const card = el('div', 'report-item');
+    card.appendChild(el('div', 'report-item-topic', topicLabel(r.topic)));
+    card.appendChild(el('div', 'report-item-meta', formatReportTime(r.ts)));
+    card.appendChild(el('div', 'report-item-url', r.url || '—'));
+    if (r.details) card.appendChild(el('div', 'report-item-details', r.details));
+    list.appendChild(card);
+  });
+}
+
+function openReportsPanel() {
+  closeReportPanel();
+  closeHeadMenu();
+  closeTcPanel();
+  closeSettingsPanel();
+  closeSupportPanel();
+  document.body.classList.add('reports-open');
+  const panel = document.getElementById('reports-panel');
+  if (panel) panel.hidden = false;
+  renderReportsList();
+}
+
+function closeReportsPanel() {
+  document.body.classList.remove('reports-open');
+  const panel = document.getElementById('reports-panel');
+  if (panel) panel.hidden = true;
+}
+
+function setupReportsPanel() {
+  const back = document.getElementById('reports-back');
+  const clearBtn = document.getElementById('reports-clear');
+  const inboxBtn = document.getElementById('reports-inbox-btn');
+  if (back) back.addEventListener('click', closeReportsPanel);
+  if (inboxBtn) {
+    inboxBtn.addEventListener('click', () => {
+      closeSettingsPanel();
+      openReportsPanel();
+    });
+  }
+  if (clearBtn) {
+    clearBtn.addEventListener('click', async () => {
+      if (typeof PIE_REPORTS === 'undefined') return;
+      if (!window.confirm(tr('reports.clearConfirm'))) return;
+      await PIE_REPORTS.clear();
+      renderReportsList();
+    });
+  }
+}
+
+function setupTheme(initialTheme) {
+  const btn = document.getElementById('menu-theme');
+  let themeIdx = Math.max(0, THEME_ORDER.indexOf(initialTheme));
+  applyTheme(THEME_ORDER[themeIdx]);
+  syncThemeControls(THEME_ORDER[themeIdx]);
+  if (btn) btn.addEventListener('click', () => {
+    themeIdx = (themeIdx + 1) % THEME_ORDER.length;
+    setTheme(THEME_ORDER[themeIdx]).then(() => { themeIdx = THEME_ORDER.indexOf(popupSettings.theme); });
+  });
+}
+
+function setupHeadMenu() {
+  const menuBtn = document.getElementById('menu-btn');
+  const logoBtn = document.getElementById('logo-btn');
+  const logoWrap = document.getElementById('logo-wrap');
+  const logoSoon = document.getElementById('logo-soon');
+  const settingsBtn = document.getElementById('menu-settings');
+  const reportBtn = document.getElementById('menu-report');
+  const tcBtn = document.getElementById('menu-tc');
+  const supportBtn = document.getElementById('menu-support');
+  let logoSoonTimer = null;
+
+  function hideLogoSoon() {
+    if (!logoWrap || !logoBtn) return;
+    logoWrap.classList.remove('soon-open');
+    logoBtn.setAttribute('aria-expanded', 'false');
+    if (logoSoon) logoSoon.setAttribute('aria-hidden', 'true');
+    if (logoSoonTimer) {
+      clearTimeout(logoSoonTimer);
+      logoSoonTimer = null;
+    }
+  }
+
+  function showLogoSoon() {
+    if (!logoWrap || !logoBtn) return;
+    logoWrap.classList.add('soon-open');
+    logoBtn.setAttribute('aria-expanded', 'true');
+    if (logoSoon) logoSoon.setAttribute('aria-hidden', 'false');
+    if (logoSoonTimer) clearTimeout(logoSoonTimer);
+    logoSoonTimer = setTimeout(hideLogoSoon, 2600);
+  }
+
+  if (menuBtn) menuBtn.addEventListener('click', toggleHeadMenu);
+  if (settingsBtn) {
+    settingsBtn.addEventListener('click', () => {
+      closeHeadMenu();
+      openSettingsPanel();
+    });
+  }
+  if (reportBtn) reportBtn.addEventListener('click', openReportPanel);
+  if (tcBtn) {
+    tcBtn.addEventListener('click', () => {
+      closeHeadMenu();
+      openTcPanel();
+    });
+  }
+  if (supportBtn) {
+    supportBtn.addEventListener('click', () => {
+      closeHeadMenu();
+      openSupportPanel();
+    });
+  }
+  if (logoBtn) {
+    logoBtn.addEventListener('click', () => {
+      // Future: open TOOLINGO_SITE_URL when the domain is settled.
+      if (TOOLINGO_SITE_URL) {
+        chrome.tabs.create({ url: TOOLINGO_SITE_URL });
+        return;
+      }
+      if (logoWrap && logoWrap.classList.contains('soon-open')) hideLogoSoon();
+      else showLogoSoon();
+    });
+  }
+}
+
+function openTcPanel() {
+  closeReportPanel();
+  closeHeadMenu();
+  closeSettingsPanel();
+  closeReportsPanel();
+  closeSupportPanel();
+  document.body.classList.add('tc-open');
+  const panel = document.getElementById('tc-panel');
+  if (panel) panel.hidden = false;
+}
+
+function closeTcPanel() {
+  document.body.classList.remove('tc-open');
+  const panel = document.getElementById('tc-panel');
+  if (panel) panel.hidden = true;
+}
+
+function setupTcPanel() {
+  const back = document.getElementById('tc-back');
+  const link = document.getElementById('tc-policy-link');
+  const settingsLink = document.getElementById('settings-tc-link');
+  if (back) back.addEventListener('click', closeTcPanel);
+  if (link) {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      chrome.tabs.create({ url: link.href });
+    });
+  }
+  if (settingsLink) {
+    settingsLink.addEventListener('click', () => {
+      closeSettingsPanel();
+      openTcPanel();
+    });
+  }
+}
+
+function openSupportPanel() {
+  closeReportPanel();
+  closeHeadMenu();
+  closeSettingsPanel();
+  closeReportsPanel();
+  closeTcPanel();
+  document.body.classList.add('support-open');
+  const panel = document.getElementById('support-panel');
+  if (panel) panel.hidden = false;
+}
+
+function closeSupportPanel() {
+  document.body.classList.remove('support-open');
+  const panel = document.getElementById('support-panel');
+  if (panel) panel.hidden = true;
+}
+
+function setupSupportPanel() {
+  const back = document.getElementById('support-back');
+  const openBtn = document.getElementById('support-open');
+  if (back) back.addEventListener('click', closeSupportPanel);
+  if (openBtn) {
+    openBtn.addEventListener('click', () => {
+      if (!SUPPORT_URL) return;
+      chrome.tabs.create({ url: SUPPORT_URL });
+    });
+  }
+}
+
+function setupReportPanel() {
+  const closeBtn = document.getElementById('report-close');
+  const sendBtn = document.getElementById('report-send');
+  const panel = document.getElementById('report-panel');
+  if (closeBtn) closeBtn.addEventListener('click', closeReportPanel);
+  if (sendBtn) sendBtn.addEventListener('click', submitReportForm);
+  if (panel) {
+    panel.addEventListener('click', (e) => {
+      if (e.target === panel) closeReportPanel();
+    });
   }
 }
 
@@ -566,11 +1077,141 @@ function cookieRow(cookie) {
   return row;
 }
 
+function syncSettingsCheckbox(id, checked) {
+  const node = document.getElementById(id);
+  if (node) node.checked = !!checked;
+}
+
+function updateBetaItemsVisibility(on) {
+  const items = document.getElementById('set-beta-items');
+  if (items) items.hidden = !on;
+}
+
+/** Save a settings partial and keep Settings-panel checkboxes in sync. */
+async function saveFeatureSetting(partial) {
+  popupSettings = await PIE_SETTINGS.save(partial);
+  if (Object.prototype.hasOwnProperty.call(partial, 'trackerBlock')) {
+    syncSettingsCheckbox('set-trackerblock', partial.trackerBlock);
+  }
+  if (Object.prototype.hasOwnProperty.call(partial, 'fingerprintDetect')) {
+    syncSettingsCheckbox('set-fpdetect', partial.fingerprintDetect);
+    const shield = document.getElementById('set-fpshield');
+    if (shield) shield.disabled = !partial.fingerprintDetect;
+  }
+  if (Object.prototype.hasOwnProperty.call(partial, 'fingerprintShield')) {
+    syncSettingsCheckbox('set-fpshield', partial.fingerprintShield);
+  }
+  if (Object.prototype.hasOwnProperty.call(partial, 'aiExplainEnabled')) {
+    syncSettingsCheckbox('set-aiexplain', partial.aiExplainEnabled);
+  }
+  if (Object.prototype.hasOwnProperty.call(partial, 'betaFeatures')) {
+    syncSettingsCheckbox('set-beta', partial.betaFeatures);
+    updateBetaItemsVisibility(partial.betaFeatures);
+  }
+  if (Object.prototype.hasOwnProperty.call(partial, 'toolbarIcon')) {
+    syncToolbarIconControls(partial.toolbarIcon);
+  }
+  if (Object.prototype.hasOwnProperty.call(partial, 'autoClean')) {
+    syncSettingsCheckbox('set-autoclean', partial.autoClean);
+  }
+  if (Object.prototype.hasOwnProperty.call(partial, 'weeklyDigestEnabled')) {
+    syncSettingsCheckbox('set-digest', partial.weeklyDigestEnabled);
+  }
+  if (Object.prototype.hasOwnProperty.call(partial, 'networkMonitoring')) {
+    syncSettingsCheckbox('set-network', partial.networkMonitoring);
+  }
+  return popupSettings;
+}
+
+function featToggle(opts) {
+  const label = el('label', 'feat-row' + (opts.disabled ? ' is-disabled' : ''));
+  const top = el('span', 'feat-row-top');
+  top.appendChild(el('span', 'feat-row-text', opts.text));
+  const input = document.createElement('input');
+  input.type = 'checkbox';
+  input.className = 'toggle';
+  input.checked = !!opts.checked;
+  input.disabled = !!opts.disabled;
+  input.addEventListener('change', () => {
+    if (typeof opts.onChange === 'function') opts.onChange(input.checked, input);
+  });
+  top.appendChild(input);
+  label.appendChild(top);
+  if (opts.hint) label.appendChild(el('span', 'feat-hint', opts.hint));
+  return label;
+}
+
+function featCard(title) {
+  const card = el('div', 'feat-card');
+  if (title) card.appendChild(el('div', 'feat-card-title', title));
+  return card;
+}
+
+function refreshBlockStats() {
+  return new Promise((resolve) => {
+    try {
+      chrome.runtime.sendMessage({ type: 'GET_BLOCK_STATS', tabId: currentTabId }, (resp) => {
+        if (!chrome.runtime.lastError && resp) blockStats = resp;
+        resolve(blockStats);
+      });
+    } catch (_) { resolve(blockStats); }
+  });
+}
+
+function refreshFpStats() {
+  return new Promise((resolve) => {
+    if (!popupSettings || !popupSettings.fingerprintDetect) {
+      fpStats = null;
+      resolve(null);
+      return;
+    }
+    if (currentTabId == null) { resolve(fpStats); return; }
+    try {
+      chrome.tabs.sendMessage(currentTabId, { type: 'GET_FINGERPRINT_STATS' }, (resp) => {
+        if (!chrome.runtime.lastError && resp) fpStats = resp;
+        else fpStats = fpStats || { canvas: 0, audio: 0, shielded: false };
+        resolve(fpStats);
+      });
+    } catch (_) { resolve(fpStats); }
+  });
+}
+
 function renderCookies() {
   const list = document.getElementById('cookies-list');
   const actions = document.getElementById('cookies-actions');
   list.innerHTML = '';
   actions.innerHTML = '';
+
+  const tools = featCard(tr('cookies.toolsTitle'));
+  tools.appendChild(featToggle({
+    text: tr('settings.autoClean'),
+    checked: !!(popupSettings && popupSettings.autoClean),
+    onChange: async (on) => { await saveFeatureSetting({ autoClean: on }); }
+  }));
+  const cleanBtn = el('button', 'feat-action', tr('settings.cleanNow'));
+  const cleanMsg = el('div', 'feat-msg', '');
+  cleanBtn.addEventListener('click', () => {
+    cleanBtn.disabled = true;
+    cleanMsg.textContent = tr('settings.cleaning');
+    try {
+      chrome.runtime.sendMessage({ type: 'CLEAN_TRACKER_COOKIES' }, (resp) => {
+        cleanBtn.disabled = false;
+        if (chrome.runtime.lastError) {
+          cleanMsg.textContent = tr('settings.cleanError');
+          return;
+        }
+        const n = (resp && resp.removed) || 0;
+        cleanMsg.textContent = n > 0 ? trn('settings.cleanResult', n) : tr('settings.cleanNone');
+        if (n > 0) showCookies();
+      });
+    } catch (_) {
+      cleanBtn.disabled = false;
+      cleanMsg.textContent = tr('settings.cleanError');
+    }
+  });
+  tools.appendChild(cleanBtn);
+  tools.appendChild(cleanMsg);
+  list.appendChild(tools);
 
   if (!cookieData.length) {
     list.appendChild(el('div', 'empty', tr('cookies.empty')));
@@ -652,6 +1293,44 @@ function renderSecurity() {
     myCard.appendChild(el('div', 'myip-disclaimer', tr('myip.disclaimer')));
   }
   wrap.appendChild(myCard);
+
+  // Fingerprinting controls live on Security (also in Settings).
+  const fpDetectOn = !popupSettings || popupSettings.fingerprintDetect !== false;
+  const fpShieldOn = !!(popupSettings && popupSettings.fingerprintShield);
+  const fpCard = featCard(tr('security.fpTitle'));
+  fpCard.appendChild(featToggle({
+    text: tr('settings.fingerprintDetect'),
+    hint: tr('settings.fingerprintDetectHint'),
+    checked: fpDetectOn,
+    onChange: async (on) => {
+      await saveFeatureSetting({ fingerprintDetect: on });
+      if (!on) await saveFeatureSetting({ fingerprintShield: false });
+      await refreshFpStats();
+      renderSecurity();
+      renderOverview();
+    }
+  }));
+  fpCard.appendChild(featToggle({
+    text: tr('settings.fingerprintShield'),
+    hint: tr('settings.fingerprintShieldHint'),
+    checked: fpShieldOn,
+    disabled: !fpDetectOn,
+    onChange: async (on) => {
+      await saveFeatureSetting({ fingerprintShield: on });
+      await refreshFpStats();
+      renderSecurity();
+      renderOverview();
+    }
+  }));
+  if (fpDetectOn) {
+    const canvas = (fpStats && fpStats.canvas) || 0;
+    const audio = (fpStats && fpStats.audio) || 0;
+    const line = el('div', 'feat-stat',
+      tr('overview.fpSignals', { canvas: canvas, audio: audio }) +
+      (fpShieldOn ? ' · ' + tr('overview.fpShieldOn') : ''));
+    fpCard.appendChild(line);
+  }
+  wrap.appendChild(fpCard);
 
   wrap.appendChild(el('div', 'sec-label', tr('security.attrWarnings')));
   const warned = cookieData
@@ -759,13 +1438,27 @@ function renderNetworkOff(wrap) {
   off.appendChild(el('p', null, tr('net.off')));
   const btn = el('button', 'n-enable', tr('net.turnOn'));
   btn.addEventListener('click', async () => {
-    popupSettings = await PIE_SETTINGS.save({ networkMonitoring: true });
-    const ne = document.getElementById('set-network');
-    if (ne) ne.checked = true;
+    await saveFeatureSetting({ networkMonitoring: true });
     renderNetwork();
   });
   off.appendChild(btn);
   wrap.appendChild(off);
+
+  // Tracker blocking still available even when request logging is off.
+  const blockOn = !!(popupSettings && popupSettings.trackerBlock);
+  const blockCard = featCard(tr('net.blockTitle'));
+  blockCard.appendChild(featToggle({
+    text: tr('settings.trackerBlock'),
+    hint: tr('settings.trackerBlockHint'),
+    checked: blockOn,
+    onChange: async (on) => {
+      await saveFeatureSetting({ trackerBlock: on });
+      await refreshBlockStats();
+      renderOverview();
+      renderNetwork();
+    }
+  }));
+  wrap.appendChild(blockCard);
 }
 
 async function renderNetwork() {
@@ -791,6 +1484,30 @@ async function renderNetwork() {
   sum.appendChild(nsumCell(trackers, tr('net.trackers'), 'trk'));
   wrap.appendChild(sum);
 
+  // Tracker block + stats — primary home for this feature (also in Settings).
+  const blockOn = !!(popupSettings && popupSettings.trackerBlock);
+  const blockCard = featCard(tr('net.blockTitle'));
+  blockCard.appendChild(featToggle({
+    text: tr('settings.trackerBlock'),
+    hint: tr('settings.trackerBlockHint'),
+    checked: blockOn,
+    onChange: async (on) => {
+      await saveFeatureSetting({ trackerBlock: on });
+      await refreshBlockStats();
+      renderOverview();
+      renderNetwork();
+    }
+  }));
+  const pageBlocked = (blockStats && blockStats.pageBlocked) || 0;
+  const lifeBlocked = (blockStats && blockStats.lifetimeBlocked) || 0;
+  const connected = (blockStats && blockStats.domainsConnected) || 0;
+  const bSum = el('div', 'nsum feat-nsum');
+  bSum.appendChild(nsumCell(pageBlocked, tr('overview.blockedPage')));
+  bSum.appendChild(nsumCell(lifeBlocked, tr('overview.blockedLifetime')));
+  bSum.appendChild(nsumCell(connected, tr('overview.domainsConnected')));
+  blockCard.appendChild(bSum);
+  wrap.appendChild(blockCard);
+
   const filters = el('div', 'nfilters');
   for (const flt of NET_FILTERS) {
     const chip = el('button', 'nchip' + (flt.key === networkFilter ? ' active' : ''), tr(flt.labelKey));
@@ -806,7 +1523,6 @@ async function renderNetwork() {
     for (const e of shown.slice(0, 150)) list.appendChild(networkRow(e));
     wrap.appendChild(list);
   }
-  wrap.appendChild(el('div', 'nprivacy', tr('net.privacy')));
 }
 
 function startNetworkPolling() {
@@ -835,6 +1551,8 @@ async function showCookies() {
   try { url = new URL(tab.url); } catch (e) { return; }
 
   currentSiteHost = url.hostname;
+  currentTabUrl = tab.url;
+  currentTabId = tab.id != null ? tab.id : null;
   currentSecure = url.protocol === 'https:';
   renderSiteBar();
 
@@ -844,6 +1562,29 @@ async function showCookies() {
   }
 
   const myIpPromise = refreshMyIp();
+
+  // Fetch block stats from background.
+  blockStats = null;
+  const blockStatsPromise = new Promise((resolve) => {
+    try {
+      chrome.runtime.sendMessage({ type: 'GET_BLOCK_STATS', tabId: currentTabId }, (resp) => {
+        if (!chrome.runtime.lastError && resp) blockStats = resp;
+        resolve();
+      });
+    } catch (_) { resolve(); }
+  });
+
+  // Fetch fingerprint stats from content script.
+  fpStats = null;
+  const fpPromise = new Promise((resolve) => {
+    if (!popupSettings || !popupSettings.fingerprintDetect) { resolve(); return; }
+    try {
+      chrome.tabs.sendMessage(tab.id, { type: 'GET_FINGERPRINT_STATS' }, (resp) => {
+        if (!chrome.runtime.lastError && resp) fpStats = resp;
+        resolve();
+      });
+    } catch (_) { resolve(); }
+  });
 
   const domainVariants = [url.hostname, '.' + url.hostname];
   let all = [];
@@ -855,7 +1596,7 @@ async function showCookies() {
   for (const c of all) map.set(`${c.name}|${c.domain}|${c.path}`, c);
   cookieData = Array.from(map.values());
 
-  await myIpPromise;
+  await Promise.all([myIpPromise, blockStatsPromise, fpPromise]);
   renderAll();
 }
 
@@ -968,17 +1709,6 @@ async function setTheme(theme) {
   popupSettings = await PIE_SETTINGS.save({ theme });
 }
 
-function setupTheme(initialTheme) {
-  const btn = document.getElementById('theme-btn');
-  let themeIdx = Math.max(0, THEME_ORDER.indexOf(initialTheme));
-  applyTheme(THEME_ORDER[themeIdx]);
-  syncThemeControls(THEME_ORDER[themeIdx]);
-  if (btn) btn.addEventListener('click', () => {
-    themeIdx = (themeIdx + 1) % THEME_ORDER.length;
-    setTheme(THEME_ORDER[themeIdx]).then(() => { themeIdx = THEME_ORDER.indexOf(popupSettings.theme); });
-  });
-}
-
 function prefersReducedMotion() {
   return typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
@@ -988,7 +1718,7 @@ function prefersReducedMotion() {
 function applyBackgroundFx() {
   const s = popupSettings || {};
   const on = s.animations !== false && !prefersReducedMotion();
-  document.body.dataset.anim = on ? (s.backgroundAnim || 'none') : 'none';
+  document.body.dataset.anim = on ? (s.backgroundAnim || 'particles') : 'none';
 }
 
 function applyMotion(enabled) {
@@ -1045,6 +1775,11 @@ function setupLanguage(settings) {
 }
 
 function openSettingsPanel() {
+  closeReportPanel();
+  closeHeadMenu();
+  closeTcPanel();
+  closeReportsPanel();
+  closeSupportPanel();
   document.body.classList.add('settings-open');
   document.getElementById('settings-panel').hidden = false;
 }
@@ -1056,7 +1791,13 @@ function closeSettingsPanel() {
 
 function syncBgAnimControls(anim) {
   document.querySelectorAll('#set-bganim [data-anim]').forEach((btn) => {
-    btn.classList.toggle('active', btn.dataset.anim === (anim || 'aurora'));
+    btn.classList.toggle('active', btn.dataset.anim === (anim || 'particles'));
+  });
+}
+
+function syncToolbarIconControls(mode) {
+  document.querySelectorAll('#set-toolbaricon [data-icon]').forEach((btn) => {
+    btn.classList.toggle('active', btn.dataset.icon === (mode || 'light'));
   });
 }
 
@@ -1107,8 +1848,19 @@ function bindSettingsControls(settings) {
   const bannerEl = document.getElementById('set-bannerhide');
   const badgeEl = document.getElementById('set-badge');
   const autoCleanEl = document.getElementById('set-autoclean');
+  const digestEl = document.getElementById('set-digest');
+  const trackerBlockEl = document.getElementById('set-trackerblock');
+  const fpDetectEl = document.getElementById('set-fpdetect');
+  const fpShieldEl = document.getElementById('set-fpshield');
+  const aiExplainEl = document.getElementById('set-aiexplain');
+  const betaEl = document.getElementById('set-beta');
   const cleanNowBtn = document.getElementById('clean-now');
   const cleanResult = document.getElementById('clean-result');
+  const allowlistInput = document.getElementById('allowlist-input');
+  const allowlistAdd = document.getElementById('allowlist-add');
+  const allowlistAddSite = document.getElementById('allowlist-add-site');
+  const allowlistList = document.getElementById('allowlist-list');
+  const allowlistMsg = document.getElementById('allowlist-msg');
   if (notifEl) notifEl.checked = settings.thirdPartyNotifications;
   if (ipEl) ipEl.checked = settings.ipLookupEnabled;
   if (myIpEl) myIpEl.checked = settings.myIpLookupEnabled;
@@ -1117,9 +1869,81 @@ function bindSettingsControls(settings) {
   if (bannerEl) bannerEl.checked = settings.bannerAutoHide;
   if (badgeEl) badgeEl.checked = settings.trackerBadge;
   if (autoCleanEl) autoCleanEl.checked = settings.autoClean;
+  if (digestEl) digestEl.checked = settings.weeklyDigestEnabled !== false;
+  if (trackerBlockEl) trackerBlockEl.checked = settings.trackerBlock === true;
+  if (fpDetectEl) fpDetectEl.checked = settings.fingerprintDetect !== false;
+  if (fpShieldEl) fpShieldEl.checked = settings.fingerprintShield === true;
+  if (betaEl) betaEl.checked = settings.betaFeatures === true;
+  if (aiExplainEl) aiExplainEl.checked = settings.aiExplainEnabled === true;
+  updateBetaItemsVisibility(settings.betaFeatures === true);
   applyCustomVars(settings.customTheme);
   syncThemeControls(settings.theme);
   syncBgAnimControls(settings.backgroundAnim);
+  syncToolbarIconControls(settings.toolbarIcon);
+
+  function setAllowlistMsg(text) {
+    if (allowlistMsg) allowlistMsg.textContent = text || '';
+  }
+
+  function renderAllowlist(list) {
+    if (!allowlistList) return;
+    const domains = Array.isArray(list) ? list : [];
+    allowlistList.innerHTML = '';
+    if (!domains.length) {
+      const empty = document.createElement('li');
+      empty.className = 'allowlist-empty';
+      empty.textContent = tr('settings.allowlistEmpty');
+      allowlistList.appendChild(empty);
+      allowlistList.classList.add('is-empty');
+      return;
+    }
+    allowlistList.classList.remove('is-empty');
+    domains.forEach((domain) => {
+      const li = document.createElement('li');
+      li.className = 'allowlist-item';
+      const span = document.createElement('span');
+      span.textContent = domain;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'allowlist-remove';
+      btn.textContent = tr('settings.allowlistRemove');
+      btn.setAttribute('aria-label', tr('settings.allowlistRemove') + ': ' + domain);
+      btn.addEventListener('click', async () => {
+        const next = (popupSettings.autoCleanAllowlist || []).filter((d) => d !== domain);
+        popupSettings = await PIE_SETTINGS.save({ autoCleanAllowlist: next });
+        setAllowlistMsg('');
+        renderAllowlist(popupSettings.autoCleanAllowlist);
+      });
+      li.appendChild(span);
+      li.appendChild(btn);
+      allowlistList.appendChild(li);
+    });
+  }
+
+  async function addAllowlistDomain(raw) {
+    const domain = PIE_SETTINGS.normalizeAllowlistEntry(raw);
+    if (!domain) {
+      setAllowlistMsg(tr('settings.allowlistInvalid'));
+      return;
+    }
+    const cur = popupSettings.autoCleanAllowlist || [];
+    if (cur.indexOf(domain) !== -1) {
+      setAllowlistMsg('');
+      if (allowlistInput) allowlistInput.value = '';
+      renderAllowlist(cur);
+      return;
+    }
+    popupSettings = await PIE_SETTINGS.save({ autoCleanAllowlist: cur.concat([domain]) });
+    if (allowlistInput) allowlistInput.value = '';
+    setAllowlistMsg('');
+    renderAllowlist(popupSettings.autoCleanAllowlist);
+  }
+
+  renderAllowlist(settings.autoCleanAllowlist);
+  if (allowlistAddSite) {
+    allowlistAddSite.disabled = !currentSiteHost;
+    allowlistAddSite.title = currentSiteHost || '';
+  }
 
   document.querySelectorAll('#set-theme [data-theme]').forEach((btn) => {
     btn.addEventListener('click', () => setTheme(btn.dataset.theme));
@@ -1133,6 +1957,14 @@ function bindSettingsControls(settings) {
       syncBgAnimControls(anim);
       popupSettings = await PIE_SETTINGS.save({ backgroundAnim: anim });
       applyBackgroundFx();
+    });
+  });
+
+  document.querySelectorAll('#set-toolbaricon [data-icon]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const mode = btn.dataset.icon;
+      syncToolbarIconControls(mode);
+      await saveFeatureSetting({ toolbarIcon: mode });
     });
   });
 
@@ -1195,6 +2027,88 @@ function bindSettingsControls(settings) {
     });
   }
 
+  if (digestEl) {
+    digestEl.addEventListener('change', async () => {
+      popupSettings = await PIE_SETTINGS.save({ weeklyDigestEnabled: digestEl.checked });
+      renderOverviewDigest();
+    });
+  }
+
+  if (trackerBlockEl) {
+    trackerBlockEl.addEventListener('change', async () => {
+      await saveFeatureSetting({ trackerBlock: trackerBlockEl.checked });
+      await refreshBlockStats();
+      renderOverview();
+      const active = document.querySelector('.tab.active');
+      if (active && active.dataset.tab === 'network') renderNetwork();
+    });
+  }
+
+  if (fpDetectEl) {
+    fpDetectEl.addEventListener('change', async () => {
+      await saveFeatureSetting({ fingerprintDetect: fpDetectEl.checked });
+      if (!fpDetectEl.checked) await saveFeatureSetting({ fingerprintShield: false });
+      await refreshFpStats();
+      renderOverview();
+      renderSecurity();
+    });
+  }
+
+  if (fpShieldEl) {
+    fpShieldEl.disabled = !(settings.fingerprintDetect !== false);
+    fpShieldEl.addEventListener('change', async () => {
+      await saveFeatureSetting({ fingerprintShield: fpShieldEl.checked });
+      await refreshFpStats();
+      renderOverview();
+      renderSecurity();
+    });
+  }
+
+  if (aiExplainEl) {
+    aiExplainEl.addEventListener('change', async () => {
+      await saveFeatureSetting({ aiExplainEnabled: aiExplainEl.checked });
+      renderOverviewAi();
+    });
+  }
+
+  if (betaEl) {
+    betaEl.addEventListener('change', async () => {
+      const on = betaEl.checked;
+      if (on) {
+        await saveFeatureSetting({ betaFeatures: true });
+      } else {
+        // Hide beta tools and turn them off so they don't linger silently.
+        await saveFeatureSetting({ betaFeatures: false, aiExplainEnabled: false });
+        if (aiExplainEl) aiExplainEl.checked = false;
+      }
+      updateBetaItemsVisibility(on);
+      renderOverviewAi();
+    });
+  }
+
+  if (allowlistAdd) {
+    allowlistAdd.addEventListener('click', () => {
+      addAllowlistDomain(allowlistInput ? allowlistInput.value : '');
+    });
+  }
+  if (allowlistInput) {
+    allowlistInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        addAllowlistDomain(allowlistInput.value);
+      }
+    });
+  }
+  if (allowlistAddSite) {
+    allowlistAddSite.addEventListener('click', () => {
+      if (!currentSiteHost) {
+        setAllowlistMsg(tr('settings.allowlistInvalid'));
+        return;
+      }
+      addAllowlistDomain(currentSiteHost);
+    });
+  }
+
   if (cleanNowBtn) {
     cleanNowBtn.addEventListener('click', () => {
       cleanNowBtn.disabled = true;
@@ -1221,15 +2135,13 @@ function bindSettingsControls(settings) {
 }
 
 function setupSettingsPanel() {
-  const openBtn = document.getElementById('settings-btn');
   const backBtn = document.getElementById('settings-back');
-  if (openBtn) openBtn.addEventListener('click', openSettingsPanel);
   if (backBtn) backBtn.addEventListener('click', closeSettingsPanel);
 
   const reportBtn = document.getElementById('report-btn');
   const footReport = document.getElementById('foot-report');
-  if (reportBtn) reportBtn.addEventListener('click', openFeedbackReport);
-  if (footReport) footReport.addEventListener('click', openFeedbackReport);
+  if (reportBtn) reportBtn.addEventListener('click', openReportPanel);
+  if (footReport) footReport.addEventListener('click', openReportPanel);
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -1244,5 +2156,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupLanguage(popupSettings);
   bindSettingsControls(popupSettings);
   setupSettingsPanel();
+  setupHeadMenu();
+  setupReportPanel();
+  setupTcPanel();
+  setupSupportPanel();
+  setupReportsPanel();
   showCookies();
 });

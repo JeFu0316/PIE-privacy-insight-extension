@@ -31,23 +31,103 @@
     myIpLookupEnabled: false,
     networkMonitoring: true,
     animations: true,
-    backgroundAnim: 'aurora',
+    backgroundAnim: 'particles',
     customTheme: { ...DEFAULT_CUSTOM_THEME },
     bannerAutoHide: false,
     trackerBadge: true,
     autoClean: false,
-    autoCleanAllowlist: []
+    autoCleanAllowlist: [],
+    weeklyDigestEnabled: true,
+    // Phase 3: Clean URLs
+    cleanUrlButton: true,
+    // Phase 4: Tracker DNR blocking (opt-in)
+    trackerBlock: false,
+    // Phase 5: Fingerprint detection + shield
+    fingerprintDetect: true,
+    fingerprintShield: false,
+    // Phase 6: On-device AI explain (gated behind betaFeatures)
+    aiExplainEnabled: false,
+    // Unstable / early features — hidden until the user enables Beta features
+    betaFeatures: false,
+    // Toolbar glyph: 'auto' follows prefers-color-scheme; 'light' = white lines
+    // (best on dark Chrome); 'dark' = dark lines (best on light Chrome).
+    // Default 'light' because Chrome's own dark theme often does NOT flip
+    // prefers-color-scheme, so Auto alone leaves black lines on a dark toolbar.
+    toolbarIcon: 'light'
   });
 
   const VALID = {
     theme: new Set(['system', 'light', 'dark', 'catppuccin', 'dracula', 'nord', 'colorblind', 'custom']),
     defaultTab: new Set(['overview', 'cookies', 'security', 'network']),
     backgroundAnim: new Set(['none', 'aurora', 'particles', 'shimmer']),
+    toolbarIcon: new Set(['auto', 'light', 'dark']),
     // 'auto' follows the browser locale; codes cover current + planned catalogs.
     language: new Set(['auto', 'en', 'zh_CN', 'zh_TW', 'ru', 'es', 'fr', 'de', 'pt_BR', 'ja', 'ko'])
   };
 
   const HEX_RE = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
+  // Must match background.js baseDomain rules so allowlist checks align.
+  const TWO_PART_TLDS = new Set([
+    'co.uk', 'org.uk', 'gov.uk', 'ac.uk', 'co.jp', 'co.kr', 'com.au', 'net.au',
+    'com.br', 'com.cn', 'com.mx', 'co.in', 'co.nz', 'co.za', 'com.tr', 'com.sg'
+  ]);
+  const HOST_LABEL_RE = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
+
+  function baseDomain(host) {
+    if (!host) return '';
+    const parts = host.split('.');
+    if (parts.length <= 2) return host;
+    const lastTwo = parts.slice(-2).join('.');
+    if (TWO_PART_TLDS.has(lastTwo)) return parts.slice(-3).join('.');
+    return lastTwo;
+  }
+
+  /** Normalize a user-entered host/URL to the base domain Auto-Clean compares against. */
+  function normalizeAllowlistEntry(raw) {
+    if (typeof raw !== 'string') return '';
+    let s = raw.trim().toLowerCase();
+    if (!s) return '';
+
+    // Accept bare hosts, URLs, or host/path pastes.
+    if (s.indexOf('://') === -1 && (s.indexOf('/') !== -1 || s.indexOf('?') !== -1 || s.indexOf('#') !== -1)) {
+      s = 'https://' + s;
+    }
+    if (s.indexOf('://') !== -1) {
+      try {
+        s = new URL(s).hostname;
+      } catch (_) {
+        return '';
+      }
+    } else {
+      // Strip accidental path/query if pasted without scheme.
+      s = s.split('/')[0].split('?')[0].split('#')[0];
+    }
+
+    s = s.replace(/^\.+/, '').replace(/\.+$/, '');
+    if (!s || s.indexOf('.') === -1) return '';
+    if (s.indexOf('..') !== -1) return '';
+    if (s.indexOf(':') !== -1) return ''; // reject host:port / IPv6
+
+    const labels = s.split('.');
+    for (let i = 0; i < labels.length; i++) {
+      if (!HOST_LABEL_RE.test(labels[i])) return '';
+    }
+
+    return baseDomain(s);
+  }
+
+  function sanitizeAllowlist(raw) {
+    if (!Array.isArray(raw)) return [];
+    const seen = Object.create(null);
+    const out = [];
+    for (let i = 0; i < raw.length; i++) {
+      const d = normalizeAllowlistEntry(raw[i]);
+      if (!d || seen[d]) continue;
+      seen[d] = true;
+      out.push(d);
+    }
+    return out;
+  }
 
   function sanitizeCustomTheme(raw) {
     const out = { ...DEFAULT_CUSTOM_THEME };
@@ -94,8 +174,31 @@
       out.autoClean = raw.autoClean;
     }
     if (Array.isArray(raw.autoCleanAllowlist)) {
-      out.autoCleanAllowlist = raw.autoCleanAllowlist
-        .filter(function (x) { return typeof x === 'string' && x; });
+      out.autoCleanAllowlist = sanitizeAllowlist(raw.autoCleanAllowlist);
+    }
+    if (typeof raw.weeklyDigestEnabled === 'boolean') {
+      out.weeklyDigestEnabled = raw.weeklyDigestEnabled;
+    }
+    if (typeof raw.cleanUrlButton === 'boolean') {
+      out.cleanUrlButton = raw.cleanUrlButton;
+    }
+    if (typeof raw.trackerBlock === 'boolean') {
+      out.trackerBlock = raw.trackerBlock;
+    }
+    if (typeof raw.fingerprintDetect === 'boolean') {
+      out.fingerprintDetect = raw.fingerprintDetect;
+    }
+    if (typeof raw.fingerprintShield === 'boolean') {
+      out.fingerprintShield = raw.fingerprintShield;
+    }
+    if (typeof raw.aiExplainEnabled === 'boolean') {
+      out.aiExplainEnabled = raw.aiExplainEnabled;
+    }
+    if (typeof raw.betaFeatures === 'boolean') {
+      out.betaFeatures = raw.betaFeatures;
+    }
+    if (typeof raw.toolbarIcon === 'string' && VALID.toolbarIcon.has(raw.toolbarIcon)) {
+      out.toolbarIcon = raw.toolbarIcon;
     }
 
     out.schemaVersion = SCHEMA_VERSION;
@@ -125,6 +228,8 @@
     CUSTOM_THEME_KEYS,
     DEFAULT_CUSTOM_THEME,
     sanitizeCustomTheme,
+    normalizeAllowlistEntry,
+    sanitizeAllowlist,
     mergeWithDefaults,
     load,
     save
