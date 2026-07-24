@@ -1,42 +1,39 @@
-# Project: P.I.E — Privacy Insight Extension
+# Project: Toolingo — Privacy Insight Extension
 
-A published Chrome extension (Manifest V3, currently v2.0) that gives users
-insight into website cookie usage, third-party tracking, connection security, and
-possible PII in cookie values. **It is live on the Chrome Web Store and fully
-functional — treat all changes as changes to production software.**
+Published Chrome extension (Manifest V3, code **v2.1.0**). Public brand **Toolingo**;
+legacy shorthand **P.I.E** may appear in older notes. Live on the Chrome Web Store —
+treat all changes as production software.
 
-## What it does
-- Reads cookies for the active site (`chrome.cookies`) and displays them in a
-  simple view and a detailed view.
-- Detects possible PII in cookie values (email, phone, JWT, UUID, credit card via
-  Luhn, high-entropy tokens) with entropy analysis and a benign-name dampening list.
-- Flags third-party cookies and connection security (HTTPS badge).
-- Detects cookie-consent banners via a content-script MutationObserver.
+**Catch-up docs:** shipped features & status → [`FINDINGS_PIE.md`](FINDINGS_PIE.md);  
+store packaging → [`PUBLISH_CHECKLIST.md`](PUBLISH_CHECKLIST.md).
 
-## File map
-- `manifest.json` — MV3 manifest. Permissions: cookies, tabs, webRequest;
-  host_permissions <all_urls>.
-- `background.js` — service worker. HTTPS badge + third-party cookie detection via
-  `chrome.webRequest.onHeadersReceived` (read-only) + notifications.
-- `content_script.js` — snapshots storage, wraps fetch, watches for consent banners.
-- `popup.html` / `popup.css` / `popup.js` — the UI. `popup.js` (~19KB) holds the
-  scoring engine (`detectPII`, `calculateOverallRisk`) and all rendering.
-- `pie16/32/128.png` — icons.
+## What it does (summary)
+- Cookie insight for the active site: PII detection + two-axis Sensitivity / Tracking scores.
+- Third-party cookies, HTTPS status, network metadata (on-device), consent-banner detect.
+- Optional protect: auto-clean tracker cookies, DNR block known trackers, Clean URL,
+  fingerprint detect/shield, best-effort banner hide, on-device AI explain (beta).
+- Settings: themes, languages, toolbar icon lines, weekly digest, Support (Ko-fi via Pages).
+
+## File map (runtime)
+- `manifest.json` — MV3; cookies, tabs, webRequest, storage, notifications,
+  declarativeNetRequest, offscreen; host_permissions `<all_urls>`.
+- `background.js` — service worker (observe webRequest, badge, auto-clean, DNR, notifs).
+- `content_script.js` — banner detect/hide, fingerprint watch/shield.
+- `popup.html` / `popup.css` / `popup.js` — UI + scoring engine.
+- `settings.js`, `i18n.js`, `digest.js`, `exit-ip.js`, `reports.js`,
+  `clean-urls.js`, `block-stats.js`, `ai-explain.js`,
+  `cookie-database.js`, `tracker-domains.js`, `COOKIE_DB_LICENSE.txt`,
+  `offscreen-icon-theme.html/js`, `toolingo*.png`.
 
 ## Tech & conventions
-- Vanilla JS, no build step, no framework, no bundler. Keep it that way unless a
-  change clearly justifies tooling — and if so, STOP and ask first.
-- Manifest V3. Be careful with any webRequest usage (see the known risk below).
-- Test command: **there is no automated test suite yet.** Verify changes by
-  loading the unpacked extension in Chrome and manually exercising the popup on a
-  few sites. Flag anywhere a small unit test (e.g. for scoring functions) would add
-  real safety and propose it.
-- No secrets in the repo. No new external network calls without explicit approval
-  (privacy is the product — see architecture rule below).
+- Vanilla JS, no build step, no framework, no bundler — ask first before adding tooling.
+- Manifest V3; webRequest is observe-only (no blocking). Blocking uses DNR when opted in.
+- Tests: `tests/*.test.js` for core modules; still smoke-test via Load unpacked in Chrome.
+- No secrets. No new external network calls without explicit approval.
 
 ## Environment
-- Developed on native Windows via Claude Code (terminal CLI).
-- The extension runs in Chrome; there is no server component.
+- Developed on native Windows. Extension runs in Chrome; no app server.
+- Privacy policy / Support Pages site: `C:\PIE-privacy-site` (not inside this package).
 
 ---
 
@@ -47,57 +44,46 @@ integrate — you do not do the heavy work yourself. Specialists available as
 subagents:
 
 - **research-lead** (read-only): investigates the codebase and external facts
-  (e.g. current MV3 API rules, cookie-database options) and reports back.
+  (e.g. current MV3 API rules) and reports back.
 - **code-lead** (read/write): implements an approved, well-scoped change.
 - **reviewer** (read-only): quality gate — reviews diffs, checks the change matches
-  the plan, confirms no regressions, and manually reasons through popup behaviour
-  since there is no test suite.
+  the plan, confirms no regressions, and manually reasons through popup behaviour.
 
-The approved analysis and roadmap live in `FINDINGS_PIE.md`. Work from it.
+Work from `FINDINGS_PIE.md` (what exists) and escalate per the gates below.
 
 ## The working loop
-1. **Plan** the phase from FINDINGS_PIE.md.
-2. **Research** (research-lead) if anything is uncertain — especially the MV3 risk.
+1. **Plan** from FINDINGS_PIE.md / the human’s task.
+2. **Research** (research-lead) if anything is uncertain — especially MV3 / CWS risk.
 3. **Implement** (code-lead) against a clear spec with acceptance criteria.
 4. **Review** (reviewer). Route fixes back; do not proceed past a blocking finding.
-5. **Integrate & checkpoint**, then STOP and check in with the human.
+5. **Integrate & checkpoint**, then STOP and check in with the human when needed.
 
 ## Project-specific hard rules
-- **This is published software.** Never break existing functionality to add a
-  feature. Every change must keep the extension loadable and the popup working.
-- **Privacy is the product.** Do NOT add any external network call that transmits
-  the user's cookies, visited domains, or browsing data. Tracker classification
-  must be done on-device via a bundled local database. The one existing external
-  call (Google DNS IP lookup) is under review — do not add more like it.
-- **No destructive git.** Never `git reset --hard`, force-push, or delete
-  uncommitted work. Leave changes staged for review; do not commit or push unless
-  told to.
-- **Scoring redesign is a redesign, not a tweak** (see FINDINGS_PIE.md P2): split
-  Sensitivity from Tracking. Do not just re-tune thresholds.
-- **Idea #5 (delete cookies) already partly exists** — enhance `deleteCookie()`,
-  don't rebuild it. Always show the site-breakage warning before deleting.
-- **Idea #2 (banner blocking)** is descoped/deferred pending the human's decision —
-  do NOT build full banner blocking without explicit approval.
+- **This is published software.** Never break existing functionality to add a feature.
+- **Privacy is the product.** Do NOT add external calls that transmit cookies, visited
+  domains, or browsing data. Tracker classification stays on-device (bundled DB).
+  Optional IP lookups and Formspree feedback are disclosed exceptions — do not add more
+  without approval.
+- **No destructive git.** Never `git reset --hard`, force-push, or delete uncommitted
+  work. Do not commit or push unless told to.
+- **Scoring is two-axis** (Sensitivity vs Tracking) — do not collapse back to one score.
+- **Enhance `deleteCookie()`** for cleanup flows; always show a site-breakage warning.
+- **Idea #2 full banner blocking** stays deferred — do NOT build without explicit approval.
+- **Vault / password manager** is out of band — not part of this extension.
 
 ## When to STOP and ask the human
-Run autonomously within a phase, but pause and ask when:
-- A phase boundary is reached (summarise, wait for go).
-- A big/irreversible decision arises: adding a dependency or build step, changing
-  the manifest's permissions, adding any external network call, bumping the
-  published version, or anything that changes what ships to real users.
-- The MV3 research reveals the current approach is unsafe/deprecated.
-- Scope grows materially beyond the phase plan.
-- A specialist fails the same task twice.
-- Anything destructive would be required.
+- Phase / store boundary reached.
+- Big decisions: new dependency or build step, new manifest permissions, new external
+  network call, bumping the published store version, anything that changes what ships.
+- Scope grows past the agreed task; specialist fails the same task twice; anything destructive.
 
-Present: what you did, what you propose next, the specific decision needed, options
-with a recommendation. Then wait.
+Present: what you did, what you propose next, the decision needed, options + recommendation.
 
 ## Don't over-ask
-Routine implementation details, CSS values, variable names, obvious bug fixes, and
-normal review-fix loops are yours to decide. Only escalate the above.
+Routine implementation details, CSS, naming, obvious bug fixes, and normal review-fix
+loops are yours. Only escalate the gates above.
 
-## Cost discipline (Pro plan)
-Delegate only when isolation/parallelism pays off. Prefer research-lead (cheap
-model) for exploration; reserve code-lead for implementation. Checkpoint cleanly at
-phase ends so a fresh session can resume from FINDINGS_PIE.md without re-analysing.
+## Cost discipline
+Delegate when isolation/parallelism pays off. Prefer research-lead for exploration;
+reserve code-lead for implementation. Checkpoint so a fresh session can resume from
+FINDINGS_PIE.md without re-analysing.
