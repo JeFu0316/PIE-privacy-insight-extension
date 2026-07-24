@@ -28,7 +28,7 @@
 
   var MESSAGES = {
     en: {
-      'app.tagline': 'Privacy Insight',
+      'app.tagline': 'Your All In One Privacy Security Tools',
       'header.switchTheme': 'Switch theme',
       'header.settings': 'Settings',
       'header.menu': 'Menu',
@@ -36,6 +36,7 @@
       'header.logoSoon': 'Website coming soon!',
       'header.report': 'Report a problem',
       'header.tc': 'Terms & clarity',
+      'header.support': 'Support Toolingo',
       'site.scanning': 'Scanning…',
       'site.thisPage': 'This page',
       'site.httpsSecure': 'HTTPS Secure',
@@ -91,6 +92,11 @@
       'tc.settingsBody': 'Settings may sync across Chrome when you are signed in. The weekly digest stores only aggregate tracker counts and cleaned-cookie totals locally — not the first-party sites you visit.',
       'tc.policyTitle': 'Full privacy policy',
       'tc.policyLink': 'Open the privacy policy',
+      'support.title': 'Support Toolingo',
+      'support.leadTitle': 'Keep Toolingo free',
+      'support.leadBody': 'Toolingo stays on-device and free to use. If it helps you, optional support keeps development going — never required.',
+      'support.cta': 'Support Toolingo',
+      'support.hint': 'Opens a free GitHub Pages page in a new tab. No browsing data is sent from the extension.',
       'report.mailBody': 'Topic: {topic}\nURL: {url}\n\n{details}\n\n---\nExtension version: {version}\nLanguage setting: {language}\nActive locale: {locale}\n(Please do not paste cookies, passwords, or personal data.)\n',
       'feedback.subject': 'Toolingo feedback (v{version})',
       'feedback.body': 'Hi,\n\nI have feedback about Toolingo:\n\n[Describe the bug or idea here]\n\n---\nExtension version: {version}\nLanguage setting: {language}\nActive locale: {locale}\n(Please do not paste cookies, passwords, or personal data.)\n',

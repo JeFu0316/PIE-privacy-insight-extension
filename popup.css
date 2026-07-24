@@ -412,6 +412,7 @@ body.head-menu-open .menu-btn { color: var(--brand); background: var(--card-2); 
 .settings-panel { display: flex; flex-direction: column; max-height: 520px; }
 .settings-panel[hidden] { display: none !important; }
 body.settings-open #main-view { display: none; }
+body.settings-open .support-panel { display: none; }
 body.settings-open .menu-btn { background: var(--card-2); color: var(--brand); }
 .settings-head { display: flex; align-items: center; gap: 8px; padding: 4px 10px 10px 6px; }
 .settings-title { font-size: 15px; font-weight: 700; }
@@ -557,7 +558,7 @@ body.settings-open .menu-btn { background: var(--card-2); color: var(--brand); }
 
 /* ---- animated background (Off / Aurora / Particles / Shimmer) ---- */
 .bg-fx { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
-.head, #main-view, .settings-panel, .tc-panel { position: relative; z-index: 1; }
+.head, #main-view, .settings-panel, .tc-panel, .support-panel, .reports-panel { position: relative; z-index: 1; }
 
 /* Aurora: lighter blur + opacity to reduce GPU cost (was laggy at 64px blur + scale) */
 body[data-anim="aurora"] .bg-fx::before,
@@ -646,7 +647,8 @@ html.reduce-motion .bg-fx { display: none; }
 .tc-panel[hidden] { display: none !important; }
 body.tc-open #main-view,
 body.tc-open .settings-panel,
-body.tc-open .reports-panel { display: none; }
+body.tc-open .reports-panel,
+body.tc-open .support-panel { display: none; }
 .tc-body { padding: 0 14px 16px; overflow-y: auto; flex: 1; }
 .tc-block { margin-bottom: 14px; }
 .tc-block h3 { margin: 0 0 6px; font-size: 12.5px; font-weight: 700; }
@@ -654,12 +656,25 @@ body.tc-open .reports-panel { display: none; }
 .tc-link { color: var(--brand); font-size: 12px; font-weight: 600; text-decoration: none; }
 .tc-link:hover { text-decoration: underline; }
 
+/* ---- Support / donate ---- */
+.support-panel { display: flex; flex-direction: column; max-height: 520px; }
+.support-panel[hidden] { display: none !important; }
+body.support-open #main-view,
+body.support-open .settings-panel,
+body.support-open .reports-panel,
+body.support-open .tc-panel { display: none; }
+body.tc-open .support-panel,
+body.reports-open .support-panel,
+body.settings-open .support-panel { display: none; }
+.support-body { padding: 0 14px 16px; overflow-y: auto; flex: 1; }
+
 /* ---- Submitted reports inbox ---- */
 .reports-panel { display: flex; flex-direction: column; max-height: 520px; }
 .reports-panel[hidden] { display: none !important; }
 body.reports-open #main-view,
 body.reports-open .settings-panel,
-body.reports-open .tc-panel { display: none; }
+body.reports-open .tc-panel,
+body.reports-open .support-panel { display: none; }
 .reports-body { padding: 0 14px 16px; overflow-y: auto; flex: 1; }
 .report-item {
   background: var(--card-2); border-radius: 10px; padding: 10px 11px; margin-bottom: 8px;

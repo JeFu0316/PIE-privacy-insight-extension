@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Toolingo — Privacy Insight</title>
+    <title>Toolingo — Your All In One Privacy Security Tools</title>
     <link rel="stylesheet" href="popup.css" />
   </head>
   <body>
@@ -31,6 +31,9 @@
           </button>
           <button type="button" class="icon-btn" id="menu-tc" data-i18n-label="header.tc" data-i18n-title="header.tc" aria-label="Terms & clarity" title="Terms & clarity">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+          </button>
+          <button type="button" class="icon-btn" id="menu-support" data-i18n-label="header.support" data-i18n-title="header.support" aria-label="Support Toolingo" title="Support Toolingo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>
           </button>
         </div>
         <button type="button" class="icon-btn menu-btn" id="menu-btn" data-i18n-label="header.menu" data-i18n-title="header.menu" aria-label="Menu" title="Menu" aria-expanded="false" aria-controls="head-actions">
@@ -140,7 +143,6 @@
               <button type="button" class="seg-btn" data-anim="particles" data-i18n="bganim.particles">Particles</button>
               <button type="button" class="seg-btn" data-anim="shimmer" data-i18n="bganim.shimmer">Shimmer</button>
             </div>
-            <span class="set-hint" data-i18n="settings.bgAnimHint">Animated backdrop behind the popup. Disabled automatically when “Smooth animations” is off or your system requests reduced motion.</span>
           </div>
           <div class="set-row set-row-col" style="cursor:default; margin-top:10px;">
             <span class="set-row-text" style="margin-bottom:8px;" data-i18n="settings.toolbarIcon">Toolbar icon</span>
@@ -173,7 +175,6 @@
               <span class="set-row-text" data-i18n="settings.showMyIp">Show my public IP</span>
               <input type="checkbox" class="toggle" id="set-myip" />
             </span>
-            <span class="set-hint" data-i18n="settings.showMyIpHint">Asks Cloudflare for your exit IP and does a best-effort VPN/datacenter check via reverse DNS. Off by default — your IP is sent to those services when enabled.</span>
           </label>
           <label class="set-row set-row-col">
             <span class="set-row-top">
@@ -187,7 +188,6 @@
               <span class="set-row-text" data-i18n="settings.bannerHide">Auto-hide cookie banners</span>
               <input type="checkbox" class="toggle" id="set-bannerhide" />
             </span>
-            <span class="set-hint" data-i18n="settings.bannerHideHint">Best-effort: hides detected consent banners with CSS. It doesn't reject cookies for you, and may occasionally hide the wrong element or miss a banner. Takes effect on the next page load.</span>
           </label>
         </div>
         <div class="set-section">
@@ -197,14 +197,12 @@
               <span class="set-row-text" data-i18n="settings.showBadge">Show tracker count on icon</span>
               <input type="checkbox" class="toggle" id="set-badge" />
             </span>
-            <span class="set-hint" data-i18n="settings.showBadgeHint">Displays the number of known trackers a site contacts as a badge on the toolbar icon.</span>
           </label>
           <label class="set-row set-row-col">
             <span class="set-row-top">
               <span class="set-row-text" data-i18n="settings.autoClean">Auto-clean tracker cookies</span>
               <input type="checkbox" class="toggle" id="set-autoclean" />
             </span>
-            <span class="set-hint" data-i18n="settings.autoCleanHint">Automatically removes cookies from known tracker &amp; ad domains when you close tabs. First-party and login cookies are never touched.</span>
           </label>
           <div class="set-allowlist" id="set-allowlist">
             <div class="set-row-text" data-i18n="settings.allowlist">Auto-clean allowlist</div>
@@ -326,6 +324,23 @@
           <h3 data-i18n="tc.policyTitle">Full privacy policy</h3>
           <p><a class="tc-link" id="tc-policy-link" href="https://jefu0316.github.io/Index.html/" target="_blank" rel="noopener noreferrer" data-i18n="tc.policyLink">Open the privacy policy</a></p>
         </section>
+      </div>
+    </div>
+
+    <div class="support-panel" id="support-panel" hidden>
+      <div class="settings-head">
+        <button class="icon-btn" id="support-back" data-i18n-label="settings.back" data-i18n-title="settings.back" aria-label="Back" title="Back">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <div class="settings-title" data-i18n="support.title">Support Toolingo</div>
+      </div>
+      <div class="support-body">
+        <section class="tc-block">
+          <h3 data-i18n="support.leadTitle">Keep Toolingo free</h3>
+          <p data-i18n="support.leadBody">Toolingo stays on-device and free to use. If it helps you, optional support keeps development going — never required.</p>
+        </section>
+        <button type="button" class="set-action" id="support-open" data-i18n="support.cta">Support Toolingo</button>
+        <p class="set-hint" style="margin:10px 2px 0;" data-i18n="support.hint">Opens a free GitHub Pages page in a new tab. No browsing data is sent from the extension.</p>
       </div>
     </div>
 

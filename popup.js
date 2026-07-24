@@ -653,6 +653,8 @@ async function renderOverviewDigest() {
 
 // Future: official Toolingo site. Leave null until the domain is settled.
 const TOOLINGO_SITE_URL = null;
+/** Free GitHub Pages supporter page (hosting only — add Ko-fi/PayPal/Sponsors links on that page when ready). */
+const SUPPORT_URL = 'https://jefu0316.github.io/Index.html/support.html';
 let toastTimer = null;
 
 function showToast(text) {
@@ -691,6 +693,7 @@ function toggleHeadMenu() {
 function openReportPanel() {
   closeHeadMenu();
   closeTcPanel();
+  closeSupportPanel();
   const panel = document.getElementById('report-panel');
   if (!panel) return;
   panel.hidden = false;
@@ -804,6 +807,7 @@ function openReportsPanel() {
   closeHeadMenu();
   closeTcPanel();
   closeSettingsPanel();
+  closeSupportPanel();
   document.body.classList.add('reports-open');
   const panel = document.getElementById('reports-panel');
   if (panel) panel.hidden = false;
@@ -856,6 +860,7 @@ function setupHeadMenu() {
   const settingsBtn = document.getElementById('menu-settings');
   const reportBtn = document.getElementById('menu-report');
   const tcBtn = document.getElementById('menu-tc');
+  const supportBtn = document.getElementById('menu-support');
   let logoSoonTimer = null;
 
   function hideLogoSoon() {
@@ -892,6 +897,12 @@ function setupHeadMenu() {
       openTcPanel();
     });
   }
+  if (supportBtn) {
+    supportBtn.addEventListener('click', () => {
+      closeHeadMenu();
+      openSupportPanel();
+    });
+  }
   if (logoBtn) {
     logoBtn.addEventListener('click', () => {
       // Future: open TOOLINGO_SITE_URL when the domain is settled.
@@ -910,6 +921,7 @@ function openTcPanel() {
   closeHeadMenu();
   closeSettingsPanel();
   closeReportsPanel();
+  closeSupportPanel();
   document.body.classList.add('tc-open');
   const panel = document.getElementById('tc-panel');
   if (panel) panel.hidden = false;
@@ -936,6 +948,35 @@ function setupTcPanel() {
     settingsLink.addEventListener('click', () => {
       closeSettingsPanel();
       openTcPanel();
+    });
+  }
+}
+
+function openSupportPanel() {
+  closeReportPanel();
+  closeHeadMenu();
+  closeSettingsPanel();
+  closeReportsPanel();
+  closeTcPanel();
+  document.body.classList.add('support-open');
+  const panel = document.getElementById('support-panel');
+  if (panel) panel.hidden = false;
+}
+
+function closeSupportPanel() {
+  document.body.classList.remove('support-open');
+  const panel = document.getElementById('support-panel');
+  if (panel) panel.hidden = true;
+}
+
+function setupSupportPanel() {
+  const back = document.getElementById('support-back');
+  const openBtn = document.getElementById('support-open');
+  if (back) back.addEventListener('click', closeSupportPanel);
+  if (openBtn) {
+    openBtn.addEventListener('click', () => {
+      if (!SUPPORT_URL) return;
+      chrome.tabs.create({ url: SUPPORT_URL });
     });
   }
 }
@@ -1144,7 +1185,6 @@ function renderCookies() {
   const tools = featCard(tr('cookies.toolsTitle'));
   tools.appendChild(featToggle({
     text: tr('settings.autoClean'),
-    hint: tr('settings.autoCleanHint'),
     checked: !!(popupSettings && popupSettings.autoClean),
     onChange: async (on) => { await saveFeatureSetting({ autoClean: on }); }
   }));
@@ -1739,6 +1779,7 @@ function openSettingsPanel() {
   closeHeadMenu();
   closeTcPanel();
   closeReportsPanel();
+  closeSupportPanel();
   document.body.classList.add('settings-open');
   document.getElementById('settings-panel').hidden = false;
 }
@@ -2118,6 +2159,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupHeadMenu();
   setupReportPanel();
   setupTcPanel();
+  setupSupportPanel();
   setupReportsPanel();
   showCookies();
 });
